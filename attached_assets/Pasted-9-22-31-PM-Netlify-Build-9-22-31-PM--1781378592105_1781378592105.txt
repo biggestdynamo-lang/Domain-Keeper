@@ -1,0 +1,69 @@
+9:22:31 PM: Netlify Build                                                 
+9:22:31 PM: ────────────────────────────────────────────────────────────────
+9:22:31 PM: ​
+9:22:31 PM: ❯ Version
+9:22:31 PM:   @netlify/build 35.15.0
+9:22:31 PM: ​
+9:22:31 PM: ❯ Flags
+9:22:31 PM:   accountId: 69e51f7bdc23ad3b93f30df4
+9:22:31 PM:   baseRelDir: true
+9:22:31 PM:   buildId: 6a2dade681dda7141530a33d
+9:22:31 PM:   deployId: 6a2dade681dda7141530a33f
+9:22:31 PM:   packagePath: artifacts/freeable-domains
+9:22:31 PM: ​
+9:22:31 PM: ❯ Current directory
+9:22:31 PM:   /opt/build/repo
+9:22:31 PM: ​
+9:22:31 PM: ❯ Config file
+9:22:31 PM:   /opt/build/repo/netlify.toml
+9:22:31 PM: ​
+9:22:31 PM: ❯ Context
+9:22:31 PM:   production
+9:22:32 PM: Failed during stage 'building site': Build script returned non-zero exit code: 2 (https://ntl.fyi/exit-code-2)
+9:22:32 PM: ​
+9:22:32 PM: build.command from netlify.toml                               
+9:22:32 PM: ────────────────────────────────────────────────────────────────
+9:22:32 PM: ​
+9:22:32 PM: $ npm install -g pnpm && pnpm install && pnpm run typecheck:libs && pnpm --filter @workspace/api-server run build:netlify
+9:22:32 PM: npm error code EEXIST
+9:22:32 PM: npm error path /opt/buildhome/.nvm/versions/node/v22.22.3/bin/pnpx
+9:22:32 PM: npm error EEXIST: file already exists
+9:22:32 PM: npm error File exists: /opt/buildhome/.nvm/versions/node/v22.22.3/bin/pnpx
+9:22:32 PM: npm error Remove the existing file and try again, or run npm
+9:22:32 PM: npm error with --force to overwrite files recklessly.
+9:22:32 PM: npm error A complete log of this run can be found in: /opt/buildhome/.npm/_logs/2026-06-13T19_22_32_052Z-debug-0.log
+9:22:32 PM: ​
+9:22:32 PM: "build.command" failed                                        
+9:22:32 PM: ────────────────────────────────────────────────────────────────
+9:22:32 PM: ​
+9:22:32 PM:   Error message
+9:22:32 PM:   Command failed with exit code 1: npm install -g pnpm && pnpm install && pnpm run typecheck:libs && pnpm --filter @workspace/api-server run build:netlify (https://ntl.fyi/exit-code-1)
+9:22:32 PM: ​
+9:22:32 PM:   Error location
+9:22:32 PM:   In build.command from netlify.toml:
+9:22:32 PM:   npm install -g pnpm && pnpm install && pnpm run typecheck:libs && pnpm --filter @workspace/api-server run build:netlify
+9:22:32 PM: ​
+9:22:32 PM:   Resolved config
+9:22:32 PM:   build:
+9:22:32 PM:     command: npm install -g pnpm && pnpm install && pnpm run typecheck:libs && pnpm
+9:22:32 PM:       --filter @workspace/api-server run build:netlify
+9:22:32 PM:     commandOrigin: config
+9:22:32 PM:     environment:
+9:22:32 PM:       - DATABASE_URL
+9:22:32 PM:       - NODE_ENV
+9:22:32 PM:       - SESSION_SECRET
+9:22:32 PM:     publish: /opt/build/repo/artifacts/freeable-domains/dist/public
+9:22:32 PM:     publishOrigin: config
+9:22:32 PM:   functionsDirectory: /opt/build/repo/netlify/dist/functions
+9:22:32 PM:   redirects:
+9:22:32 PM:     - force: true
+9:22:32 PM:       from: /api/*
+      status: 200
+      to: /.netlify/functions/api
+    - from: /*
+      status: 200
+      to: /index.html
+  redirectsOrigin: config
+9:22:32 PM: Build failed due to a user error: Build script returned non-zero exit code: 2
+9:22:32 PM: Failing build: Failed to build site
+9:22:33 PM: Finished processing build request in 17.841s
