@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, projectsTable, deploymentsTable, logEntriesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { DetectFrameworkBody, ImportFromGithubBody } from "@workspace/api-zod";
+import { dispatchBuild } from "../lib/build-dispatch";
 
 const router = Router();
 
@@ -122,12 +123,19 @@ router.post("/github/import", async (req, res) => {
     status: "queued",
   }).returning();
 
-  // In serverless, await the simulation before responding so it completes
-  if (IS_SERVERLESS) {
-    await simulateBuild(deployment.id, project.id);
-  } else {
-    simulateBuild(deployment.id, project.id);
-  }
+  await dispatchBuild(
+    {
+      deploymentId: deployment.id,
+      projectId: project.id,
+      repoUrl: body.repoUrl,
+      branch: project.branch,
+      buildCommand: detected.buildCommand,
+      framework: detected.framework,
+      packageManager: detected.packageManager,
+    },
+    () => simulateBuild(deployment.id, project.id),
+    IS_SERVERLESS
+  );
 
   res.status(201).json({
     project,

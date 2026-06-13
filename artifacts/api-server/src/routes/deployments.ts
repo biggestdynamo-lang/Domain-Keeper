@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, deploymentsTable, projectsTable, logEntriesTable } from "@workspace/db";
 import { eq, desc, gt, and } from "drizzle-orm";
 import { logActivity } from "../lib/activity";
+import { dispatchBuild } from "../lib/build-dispatch";
 import {
   CreateDeploymentParams,
   CreateDeploymentBody,
@@ -68,12 +69,19 @@ router.post("/projects/:id/deployments", async (req, res) => {
     metadata: { deploymentId: deployment.id, triggeredBy: "manual" },
   });
 
-  // In serverless, await simulation before responding so it completes
-  if (IS_SERVERLESS) {
-    await simulateBuild(deployment.id, id);
-  } else {
-    simulateBuild(deployment.id, id);
-  }
+  await dispatchBuild(
+    {
+      deploymentId: deployment.id,
+      projectId: id,
+      repoUrl: project.repoUrl,
+      branch: project.branch,
+      buildCommand: project.buildCommand,
+      framework: project.framework,
+      packageManager: project.packageManager,
+    },
+    () => simulateBuild(deployment.id, id),
+    IS_SERVERLESS
+  );
 
   res.status(201).json({ ...deployment, projectName: project.name });
 });
@@ -129,11 +137,21 @@ router.post("/deployments/:id/rollback", async (req, res) => {
     metadata: { deploymentId: newDep.id, rolledBackFrom: id, triggeredBy: "rollback" },
   });
 
-  if (IS_SERVERLESS) {
-    await simulateBuild(newDep.id, orig.projectId);
-  } else {
-    simulateBuild(newDep.id, orig.projectId);
-  }
+  const [rollbackProject] = await db.select().from(projectsTable).where(eq(projectsTable.id, orig.projectId));
+
+  await dispatchBuild(
+    {
+      deploymentId: newDep.id,
+      projectId: orig.projectId,
+      repoUrl: rollbackProject?.repoUrl,
+      branch: rollbackProject?.branch,
+      buildCommand: rollbackProject?.buildCommand,
+      framework: rollbackProject?.framework,
+      packageManager: rollbackProject?.packageManager,
+    },
+    () => simulateBuild(newDep.id, orig.projectId),
+    IS_SERVERLESS
+  );
 
   res.json({ ...newDep, projectName: null });
 });

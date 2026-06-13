@@ -11,6 +11,7 @@ import webhooksRouter from "./webhooks";
 import activityRouter from "./activity";
 import ipAddressesRouter from "./ip-addresses";
 import configRouter from "./config";
+import internalRouter from "./internal";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(webhooksRouter);
 router.use(activityRouter);
 router.use(ipAddressesRouter);
 router.use(configRouter);
+router.use(internalRouter);
 
 export default router;

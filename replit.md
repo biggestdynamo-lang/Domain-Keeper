@@ -13,6 +13,7 @@ A full-stack hosting + domain management platform combining GitHub import, auto-
 - `pnpm --filter @workspace/scripts run seed` — seed the database with sample data
 - Required env: `DATABASE_URL` — Postgres connection string, `SESSION_SECRET`
 - Optional env: `CLOUDFLARE_API_TOKEN` — Cloudflare API token with DNS edit permissions; `CLOUDFLARE_ZONE_ID` — Cloudflare zone ID for the domain. When both are set, DNS record CRUD and new-domain default records are synced to Cloudflare automatically. Without them the app runs in DB-only mode (no crash).
+- Optional env: `WORKER_URL` — Base URL of the standalone build worker (e.g. `http://your-vps:3001`). When set, GitHub imports and manual deploys dispatch real builds to the worker instead of the built-in simulation. `WORKER_SECRET` — shared secret between the API server and the worker for authenticating internal callbacks. See `worker/README.md` for VPS setup instructions.
 
 ## Stack
 
