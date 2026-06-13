@@ -7,7 +7,8 @@ import {
   Server, 
   BarChart, 
   Settings, 
-  Plus
+  Plus,
+  Network
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
@@ -17,6 +18,7 @@ const NAV_ITEMS = [
   { href: "/projects", label: "Projects", icon: Box },
   { href: "/deployments", label: "Deployments", icon: Activity },
   { href: "/domains", label: "Domains", icon: Globe },
+  { href: "/ip-addresses", label: "IP Addresses", icon: Network },
   { href: "/infrastructure", label: "Infrastructure", icon: Server },
   { href: "/analytics", label: "Analytics", icon: BarChart },
   { href: "/settings", label: "Settings", icon: Settings },

@@ -17,6 +17,7 @@ import DomainDetailPage from "@/pages/domain-detail";
 import InfrastructurePage from "@/pages/infrastructure";
 import AnalyticsPage from "@/pages/analytics";
 import SettingsPage from "@/pages/settings";
+import IpAddressesPage from "@/pages/ip-addresses";
 import DeploymentPreviewPage from "@/pages/deployment-preview";
 
 const queryClient = new QueryClient({
@@ -58,6 +59,9 @@ function Router() {
       </Route>
       <Route path="/domains">
         <Layout><DomainsPage /></Layout>
+      </Route>
+      <Route path="/ip-addresses">
+        <Layout><IpAddressesPage /></Layout>
       </Route>
       <Route path="/infrastructure">
         <Layout><InfrastructurePage /></Layout>

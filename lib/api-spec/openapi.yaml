@@ -27,6 +27,8 @@ tags:
     description: GitHub import & detection
   - name: infrastructure
     description: Infrastructure status
+  - name: ip-addresses
+    description: IP address pool management
 paths:
   /healthz:
     get:
@@ -667,6 +669,99 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/InfrastructureStatus"
+
+  # ── IP Addresses ──────────────────────────────────────────────────────────
+
+  /ip-addresses:
+    get:
+      operationId: listIpAddresses
+      tags: [ip-addresses]
+      summary: List all IP addresses in the pool
+      responses:
+        "200":
+          description: IP address list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/IpAddressWithDomain"
+    post:
+      operationId: createIpAddress
+      tags: [ip-addresses]
+      summary: Add an IP address to the pool
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateIpAddressBody"
+      responses:
+        "201":
+          description: IP address created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IpAddress"
+
+  /ip-addresses/{id}:
+    delete:
+      operationId: deleteIpAddress
+      tags: [ip-addresses]
+      summary: Remove an IP address from the pool
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /ip-addresses/{id}/assign:
+    post:
+      operationId: assignIpAddress
+      tags: [ip-addresses]
+      summary: Assign an IP address to a domain
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignIpAddressBody"
+      responses:
+        "200":
+          description: IP assigned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IpAddressWithDomain"
+
+  /ip-addresses/{id}/release:
+    post:
+      operationId: releaseIpAddress
+      tags: [ip-addresses]
+      summary: Release an IP address from its domain
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: IP released
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IpAddressWithDomain"
 
   # ── Webhooks ──────────────────────────────────────────────────────────────
 
@@ -1407,3 +1502,59 @@ components:
         event:
           $ref: "#/components/schemas/WebhookEvent"
       required: [received, deploymentId, event]
+
+    # ── IP Addresses ──────────────────────────────────────────────────────────
+
+    IpAddress:
+      type: object
+      properties:
+        id:
+          type: integer
+        address:
+          type: string
+        label:
+          type: ["string", "null"]
+        region:
+          type: string
+        type:
+          type: string
+          enum: [shared, dedicated]
+        status:
+          type: string
+          enum: [available, assigned, reserved]
+        domainId:
+          type: ["integer", "null"]
+        assignedAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required: [id, address, region, type, status, createdAt]
+
+    IpAddressWithDomain:
+      allOf:
+        - $ref: "#/components/schemas/IpAddress"
+        - type: object
+          properties:
+            domainName:
+              type: ["string", "null"]
+
+    CreateIpAddressBody:
+      type: object
+      properties:
+        address:
+          type: string
+        label:
+          type: string
+        region:
+          type: string
+        type:
+          type: string
+          enum: [shared, dedicated]
+      required: [address]
+
+    AssignIpAddressBody:
+      type: object
+      properties:
+        domainId:
+          type: integer
+      required: [domainId]

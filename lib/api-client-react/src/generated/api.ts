@@ -22,6 +22,8 @@ import type {
 import type {
   ActivityEvent,
   AnalyticsSummary,
+  AssignIpAddressBody,
+  CreateIpAddressBody,
   DashboardSummary,
   Deployment,
   DeploymentInput,
@@ -43,6 +45,8 @@ import type {
   GithubPushPayload,
   HealthStatus,
   InfrastructureStatus,
+  IpAddress,
+  IpAddressWithDomain,
   LogEntry,
   Project,
   ProjectInput,
@@ -2518,6 +2522,366 @@ export function useGetInfrastructureStatus<TData = Awaited<ReturnType<typeof get
 
 
 
+
+export const getListIpAddressesUrl = () => {
+
+
+
+
+  return `/api/ip-addresses`
+}
+
+/**
+ * @summary List all IP addresses in the pool
+ */
+export const listIpAddresses = async ( options?: RequestInit): Promise<IpAddressWithDomain[]> => {
+
+  return customFetch<IpAddressWithDomain[]>(getListIpAddressesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListIpAddressesQueryKey = () => {
+    return [
+    `/api/ip-addresses`
+    ] as const;
+    }
+
+
+export const getListIpAddressesQueryOptions = <TData = Awaited<ReturnType<typeof listIpAddresses>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listIpAddresses>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListIpAddressesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listIpAddresses>>> = ({ signal }) => listIpAddresses({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listIpAddresses>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListIpAddressesQueryResult = NonNullable<Awaited<ReturnType<typeof listIpAddresses>>>
+export type ListIpAddressesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all IP addresses in the pool
+ */
+
+export function useListIpAddresses<TData = Awaited<ReturnType<typeof listIpAddresses>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listIpAddresses>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListIpAddressesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateIpAddressUrl = () => {
+
+
+
+
+  return `/api/ip-addresses`
+}
+
+/**
+ * @summary Add an IP address to the pool
+ */
+export const createIpAddress = async (createIpAddressBody: CreateIpAddressBody, options?: RequestInit): Promise<IpAddress> => {
+
+  return customFetch<IpAddress>(getCreateIpAddressUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createIpAddressBody,)
+  }
+);}
+
+
+
+
+export const getCreateIpAddressMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createIpAddress>>, TError,{data: BodyType<CreateIpAddressBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createIpAddress>>, TError,{data: BodyType<CreateIpAddressBody>}, TContext> => {
+
+const mutationKey = ['createIpAddress'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createIpAddress>>, {data: BodyType<CreateIpAddressBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createIpAddress(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateIpAddressMutationResult = NonNullable<Awaited<ReturnType<typeof createIpAddress>>>
+    export type CreateIpAddressMutationBody = BodyType<CreateIpAddressBody>
+    export type CreateIpAddressMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Add an IP address to the pool
+ */
+export const useCreateIpAddress = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createIpAddress>>, TError,{data: BodyType<CreateIpAddressBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createIpAddress>>,
+        TError,
+        {data: BodyType<CreateIpAddressBody>},
+        TContext
+      > => {
+      return useMutation(getCreateIpAddressMutationOptions(options));
+    }
+
+export const getDeleteIpAddressUrl = (id: number,) => {
+
+
+
+
+  return `/api/ip-addresses/${id}`
+}
+
+/**
+ * @summary Remove an IP address from the pool
+ */
+export const deleteIpAddress = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteIpAddressUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteIpAddressMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteIpAddress>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteIpAddress>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteIpAddress'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteIpAddress>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteIpAddress(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteIpAddressMutationResult = NonNullable<Awaited<ReturnType<typeof deleteIpAddress>>>
+
+    export type DeleteIpAddressMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Remove an IP address from the pool
+ */
+export const useDeleteIpAddress = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteIpAddress>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteIpAddress>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteIpAddressMutationOptions(options));
+    }
+
+export const getAssignIpAddressUrl = (id: number,) => {
+
+
+
+
+  return `/api/ip-addresses/${id}/assign`
+}
+
+/**
+ * @summary Assign an IP address to a domain
+ */
+export const assignIpAddress = async (id: number,
+    assignIpAddressBody: AssignIpAddressBody, options?: RequestInit): Promise<IpAddressWithDomain> => {
+
+  return customFetch<IpAddressWithDomain>(getAssignIpAddressUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      assignIpAddressBody,)
+  }
+);}
+
+
+
+
+export const getAssignIpAddressMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof assignIpAddress>>, TError,{id: number;data: BodyType<AssignIpAddressBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof assignIpAddress>>, TError,{id: number;data: BodyType<AssignIpAddressBody>}, TContext> => {
+
+const mutationKey = ['assignIpAddress'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof assignIpAddress>>, {id: number;data: BodyType<AssignIpAddressBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  assignIpAddress(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AssignIpAddressMutationResult = NonNullable<Awaited<ReturnType<typeof assignIpAddress>>>
+    export type AssignIpAddressMutationBody = BodyType<AssignIpAddressBody>
+    export type AssignIpAddressMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Assign an IP address to a domain
+ */
+export const useAssignIpAddress = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof assignIpAddress>>, TError,{id: number;data: BodyType<AssignIpAddressBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof assignIpAddress>>,
+        TError,
+        {id: number;data: BodyType<AssignIpAddressBody>},
+        TContext
+      > => {
+      return useMutation(getAssignIpAddressMutationOptions(options));
+    }
+
+export const getReleaseIpAddressUrl = (id: number,) => {
+
+
+
+
+  return `/api/ip-addresses/${id}/release`
+}
+
+/**
+ * @summary Release an IP address from its domain
+ */
+export const releaseIpAddress = async (id: number, options?: RequestInit): Promise<IpAddressWithDomain> => {
+
+  return customFetch<IpAddressWithDomain>(getReleaseIpAddressUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getReleaseIpAddressMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof releaseIpAddress>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof releaseIpAddress>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['releaseIpAddress'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof releaseIpAddress>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  releaseIpAddress(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReleaseIpAddressMutationResult = NonNullable<Awaited<ReturnType<typeof releaseIpAddress>>>
+
+    export type ReleaseIpAddressMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Release an IP address from its domain
+ */
+export const useReleaseIpAddress = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof releaseIpAddress>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof releaseIpAddress>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getReleaseIpAddressMutationOptions(options));
+    }
 
 export const getGetProjectWebhookUrl = (id: number,) => {
 

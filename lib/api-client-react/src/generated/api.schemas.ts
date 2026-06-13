@@ -493,6 +493,62 @@ export interface WebhookTriggerResult {
   event: WebhookEvent;
 }
 
+export type IpAddressType = typeof IpAddressType[keyof typeof IpAddressType];
+
+
+export const IpAddressType = {
+  shared: 'shared',
+  dedicated: 'dedicated',
+} as const;
+
+export type IpAddressStatus = typeof IpAddressStatus[keyof typeof IpAddressStatus];
+
+
+export const IpAddressStatus = {
+  available: 'available',
+  assigned: 'assigned',
+  reserved: 'reserved',
+} as const;
+
+export interface IpAddress {
+  id: number;
+  address: string;
+  /** @nullable */
+  label?: string | null;
+  region: string;
+  type: IpAddressType;
+  status: IpAddressStatus;
+  /** @nullable */
+  domainId?: number | null;
+  /** @nullable */
+  assignedAt?: string | null;
+  createdAt: string;
+}
+
+export type IpAddressWithDomain = IpAddress & ({
+  /** @nullable */
+  domainName?: string | null;
+});
+
+export type CreateIpAddressBodyType = typeof CreateIpAddressBodyType[keyof typeof CreateIpAddressBodyType];
+
+
+export const CreateIpAddressBodyType = {
+  shared: 'shared',
+  dedicated: 'dedicated',
+} as const;
+
+export interface CreateIpAddressBody {
+  address: string;
+  label?: string;
+  region?: string;
+  type?: CreateIpAddressBodyType;
+}
+
+export interface AssignIpAddressBody {
+  domainId: number;
+}
+
 export type GetAnalyticsSummaryParams = {
 period?: GetAnalyticsSummaryPeriod;
 };

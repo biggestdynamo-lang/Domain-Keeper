@@ -714,6 +714,92 @@ export const GetInfrastructureStatusResponse = zod.object({
 
 
 /**
+ * @summary List all IP addresses in the pool
+ */
+export const ListIpAddressesResponseItem = zod.object({
+  "id": zod.number(),
+  "address": zod.string(),
+  "label": zod.string().nullish(),
+  "region": zod.string(),
+  "type": zod.enum(['shared', 'dedicated']),
+  "status": zod.enum(['available', 'assigned', 'reserved']),
+  "domainId": zod.number().nullish(),
+  "assignedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+}).and(zod.object({
+  "domainName": zod.string().nullish()
+}))
+export const ListIpAddressesResponse = zod.array(ListIpAddressesResponseItem)
+
+
+/**
+ * @summary Add an IP address to the pool
+ */
+export const CreateIpAddressBody = zod.object({
+  "address": zod.string(),
+  "label": zod.string().optional(),
+  "region": zod.string().optional(),
+  "type": zod.enum(['shared', 'dedicated']).optional()
+})
+
+
+/**
+ * @summary Remove an IP address from the pool
+ */
+export const DeleteIpAddressParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Assign an IP address to a domain
+ */
+export const AssignIpAddressParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AssignIpAddressBody = zod.object({
+  "domainId": zod.number()
+})
+
+export const AssignIpAddressResponse = zod.object({
+  "id": zod.number(),
+  "address": zod.string(),
+  "label": zod.string().nullish(),
+  "region": zod.string(),
+  "type": zod.enum(['shared', 'dedicated']),
+  "status": zod.enum(['available', 'assigned', 'reserved']),
+  "domainId": zod.number().nullish(),
+  "assignedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+}).and(zod.object({
+  "domainName": zod.string().nullish()
+}))
+
+
+/**
+ * @summary Release an IP address from its domain
+ */
+export const ReleaseIpAddressParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ReleaseIpAddressResponse = zod.object({
+  "id": zod.number(),
+  "address": zod.string(),
+  "label": zod.string().nullish(),
+  "region": zod.string(),
+  "type": zod.enum(['shared', 'dedicated']),
+  "status": zod.enum(['available', 'assigned', 'reserved']),
+  "domainId": zod.number().nullish(),
+  "assignedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+}).and(zod.object({
+  "domainName": zod.string().nullish()
+}))
+
+
+/**
  * @summary Get webhook URL and recent push events for a project
  */
 export const GetProjectWebhookParams = zod.object({
