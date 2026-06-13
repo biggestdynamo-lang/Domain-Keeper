@@ -93,11 +93,13 @@ function runCommand(
   argv: string[],
   cwd: string,
   deploymentId: number,
-  stage: BuildStage
+  stage: BuildStage,
+  extraEnv?: NodeJS.ProcessEnv
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const [exe, ...args] = argv;
-    const proc = spawn(exe, args, { cwd, stdio: "pipe", shell: false });
+    const env = extraEnv ? { ...process.env, ...extraEnv } : process.env;
+    const proc = spawn(exe, args, { cwd, stdio: "pipe", shell: false, env });
 
     proc.stdout.on("data", (chunk: Buffer) => {
       const lines = chunk.toString().split("\n").filter((l) => l.trim());
@@ -153,10 +155,14 @@ async function runBuild(job: BuildJob): Promise<void> {
     await postLog(deploymentId, "install", "info", "Dependencies installed successfully");
 
     // Stage 3 — Build
+    // Add node_modules/.bin to PATH so local CLIs (vite, astro, next, etc.) resolve
     await updateStatus(deploymentId, "building");
     await postLog(deploymentId, "build", "info", `Running: ${buildCommand}`);
     const [cmd, ...cmdArgs] = buildCommand.split(/\s+/);
-    await runCommand([cmd, ...cmdArgs], buildDir, deploymentId, "build");
+    const buildEnv: NodeJS.ProcessEnv = {
+      PATH: `${buildDir}/node_modules/.bin:${process.env.PATH ?? ""}`,
+    };
+    await runCommand([cmd, ...cmdArgs], buildDir, deploymentId, "build", buildEnv);
     await postLog(deploymentId, "build", "info", "Build completed successfully");
 
     // Stage 4 — Deploy (placeholder: serving the output is out of scope)
