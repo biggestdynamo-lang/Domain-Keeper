@@ -1,6 +1,7 @@
 import { pgTable, text, serial, timestamp, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { randomBytes } from "crypto";
 
 export const projectsTable = pgTable("projects", {
   id: serial("id").primaryKey(),
@@ -14,6 +15,7 @@ export const projectsTable = pgTable("projects", {
   outputDir: text("output_dir"),
   status: text("status").notNull().default("idle"),
   deploymentUrl: text("deployment_url"),
+  webhookToken: text("webhook_token").$defaultFn(() => randomBytes(16).toString("hex")),
   sessionId: text("session_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

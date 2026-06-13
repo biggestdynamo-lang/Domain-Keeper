@@ -39,6 +39,7 @@ import type {
   GithubDetectInput,
   GithubImportInput,
   GithubImportResult,
+  GithubPushPayload,
   HealthStatus,
   InfrastructureStatus,
   LogEntry,
@@ -46,7 +47,9 @@ import type {
   ProjectInput,
   ProjectSummary,
   ProjectUpdate,
-  SearchDomainsParams
+  SearchDomainsParams,
+  WebhookInfo,
+  WebhookTriggerResult
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -2367,4 +2370,153 @@ export function useGetInfrastructureStatus<TData = Awaited<ReturnType<typeof get
 
 
 
+
+export const getGetProjectWebhookUrl = (id: number,) => {
+
+
+
+
+  return `/api/projects/${id}/webhook`
+}
+
+/**
+ * @summary Get webhook URL and recent push events for a project
+ */
+export const getProjectWebhook = async (id: number, options?: RequestInit): Promise<WebhookInfo> => {
+
+  return customFetch<WebhookInfo>(getGetProjectWebhookUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProjectWebhookQueryKey = (id: number,) => {
+    return [
+    `/api/projects/${id}/webhook`
+    ] as const;
+    }
+
+
+export const getGetProjectWebhookQueryOptions = <TData = Awaited<ReturnType<typeof getProjectWebhook>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProjectWebhook>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProjectWebhookQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProjectWebhook>>> = ({ signal }) => getProjectWebhook(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProjectWebhook>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetProjectWebhookQueryResult = NonNullable<Awaited<ReturnType<typeof getProjectWebhook>>>
+export type GetProjectWebhookQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get webhook URL and recent push events for a project
+ */
+
+export function useGetProjectWebhook<TData = Awaited<ReturnType<typeof getProjectWebhook>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProjectWebhook>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetProjectWebhookQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getTriggerGithubWebhookUrl = (token: string,) => {
+
+
+
+
+  return `/api/webhooks/github/${token}`
+}
+
+/**
+ * @summary Receive a simulated GitHub push webhook
+ */
+export const triggerGithubWebhook = async (token: string,
+    githubPushPayload?: GithubPushPayload, options?: RequestInit): Promise<WebhookTriggerResult> => {
+
+  return customFetch<WebhookTriggerResult>(getTriggerGithubWebhookUrl(token),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      githubPushPayload,)
+  }
+);}
+
+
+
+
+export const getTriggerGithubWebhookMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof triggerGithubWebhook>>, TError,{token: string;data?: BodyType<GithubPushPayload>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof triggerGithubWebhook>>, TError,{token: string;data?: BodyType<GithubPushPayload>}, TContext> => {
+
+const mutationKey = ['triggerGithubWebhook'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof triggerGithubWebhook>>, {token: string;data?: BodyType<GithubPushPayload>}> = (props) => {
+          const {token,data} = props ?? {};
+
+          return  triggerGithubWebhook(token,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TriggerGithubWebhookMutationResult = NonNullable<Awaited<ReturnType<typeof triggerGithubWebhook>>>
+    export type TriggerGithubWebhookMutationBody = BodyType<GithubPushPayload> | undefined
+    export type TriggerGithubWebhookMutationError = ErrorType<void>
+
+    /**
+ * @summary Receive a simulated GitHub push webhook
+ */
+export const useTriggerGithubWebhook = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof triggerGithubWebhook>>, TError,{token: string;data?: BodyType<GithubPushPayload>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof triggerGithubWebhook>>,
+        TError,
+        {token: string;data?: BodyType<GithubPushPayload>},
+        TContext
+      > => {
+      return useMutation(getTriggerGithubWebhookMutationOptions(options));
+    }
 

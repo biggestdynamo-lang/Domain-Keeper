@@ -626,6 +626,56 @@ paths:
               schema:
                 $ref: "#/components/schemas/InfrastructureStatus"
 
+  # ── Webhooks ──────────────────────────────────────────────────────────────
+
+  /projects/{id}/webhook:
+    get:
+      operationId: getProjectWebhook
+      tags: [projects]
+      summary: Get webhook URL and recent push events for a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Webhook info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookInfo"
+        "404":
+          description: Not found
+
+  /webhooks/github/{token}:
+    post:
+      operationId: triggerGithubWebhook
+      tags: [builds]
+      summary: Receive a simulated GitHub push webhook
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GithubPushPayload"
+      responses:
+        "200":
+          description: Webhook received
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookTriggerResult"
+        "404":
+          description: Token not found
+
 components:
   schemas:
     HealthStatus:
@@ -1218,3 +1268,68 @@ components:
         uptime:
           type: string
       required: [id, region, status, cpuPercent, memoryPercent, containers, uptime]
+
+    # ── Webhooks ────────────────────────────────────────────────────────────
+
+    WebhookEvent:
+      type: object
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        ref:
+          type: string
+        commitSha:
+          type: ["string", "null"]
+        commitMessage:
+          type: ["string", "null"]
+        pusher:
+          type: ["string", "null"]
+        deploymentId:
+          type: ["integer", "null"]
+        receivedAt:
+          type: string
+      required: [id, projectId, ref, receivedAt]
+
+    WebhookInfo:
+      type: object
+      properties:
+        token:
+          type: string
+        webhookUrl:
+          type: string
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/WebhookEvent"
+      required: [token, webhookUrl, events]
+
+    GithubPushPayload:
+      type: object
+      properties:
+        ref:
+          type: string
+        head_commit:
+          type: object
+          properties:
+            id:
+              type: string
+            message:
+              type: string
+        pusher:
+          type: object
+          properties:
+            name:
+              type: string
+
+    WebhookTriggerResult:
+      type: object
+      properties:
+        received:
+          type: boolean
+        deploymentId:
+          type: integer
+        event:
+          $ref: "#/components/schemas/WebhookEvent"
+      required: [received, deploymentId, event]

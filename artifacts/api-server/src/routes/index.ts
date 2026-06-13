@@ -7,6 +7,7 @@ import dnsRouter from "./dns";
 import envRouter from "./env";
 import githubRouter from "./github";
 import analyticsRouter from "./analytics";
+import webhooksRouter from "./webhooks";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(dnsRouter);
 router.use(envRouter);
 router.use(githubRouter);
 router.use(analyticsRouter);
+router.use(webhooksRouter);
 
 export default router;

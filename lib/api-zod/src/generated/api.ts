@@ -671,3 +671,60 @@ export const GetInfrastructureStatusResponse = zod.object({
 })
 
 
+/**
+ * @summary Get webhook URL and recent push events for a project
+ */
+export const GetProjectWebhookParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetProjectWebhookResponse = zod.object({
+  "token": zod.string(),
+  "webhookUrl": zod.string(),
+  "events": zod.array(zod.object({
+  "id": zod.number(),
+  "projectId": zod.number(),
+  "ref": zod.string(),
+  "commitSha": zod.string().nullish(),
+  "commitMessage": zod.string().nullish(),
+  "pusher": zod.string().nullish(),
+  "deploymentId": zod.number().nullish(),
+  "receivedAt": zod.string()
+}))
+})
+
+
+/**
+ * @summary Receive a simulated GitHub push webhook
+ */
+export const TriggerGithubWebhookParams = zod.object({
+  "token": zod.coerce.string()
+})
+
+export const TriggerGithubWebhookBody = zod.object({
+  "ref": zod.string().optional(),
+  "head_commit": zod.object({
+  "id": zod.string().optional(),
+  "message": zod.string().optional()
+}).optional(),
+  "pusher": zod.object({
+  "name": zod.string().optional()
+}).optional()
+})
+
+export const TriggerGithubWebhookResponse = zod.object({
+  "received": zod.boolean(),
+  "deploymentId": zod.number(),
+  "event": zod.object({
+  "id": zod.number(),
+  "projectId": zod.number(),
+  "ref": zod.string(),
+  "commitSha": zod.string().nullish(),
+  "commitMessage": zod.string().nullish(),
+  "pusher": zod.string().nullish(),
+  "deploymentId": zod.number().nullish(),
+  "receivedAt": zod.string()
+})
+})
+
+

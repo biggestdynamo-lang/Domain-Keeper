@@ -3,8 +3,9 @@ import { useRoute, Link, useLocation } from "wouter";
 import {
   useGetProject, useGetProjectSummary, useListDeployments, useListDomains,
   useListEnvVars, useCreateDeployment, useCreateEnvVar, useDeleteEnvVar,
-  useUpdateProject, getListDeploymentsQueryKey, getListEnvVarsQueryKey,
-  getGetProjectQueryKey, getGetProjectSummaryQueryKey
+  useUpdateProject, useGetProjectWebhook, useTriggerGithubWebhook,
+  getListDeploymentsQueryKey, getListEnvVarsQueryKey,
+  getGetProjectQueryKey, getGetProjectSummaryQueryKey, getGetProjectWebhookQueryKey
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
-import { Zap, Globe, KeyRound, Activity, Settings, GitBranch, ExternalLink, Plus, Trash2, Eye, EyeOff, BarChart } from "lucide-react";
+import { Zap, Globe, KeyRound, Activity, Settings, GitBranch, ExternalLink, Plus, Trash2, Eye, EyeOff, BarChart, Copy, Check, Webhook, GitCommit, RefreshCw } from "lucide-react";
 
 function statusDot(status: string) {
   switch (status) {
@@ -60,12 +61,18 @@ export default function ProjectDetailPage() {
   const createDeployment = useCreateDeployment();
   const createEnvVar = useCreateEnvVar();
   const deleteEnvVar = useDeleteEnvVar();
+  const triggerWebhook = useTriggerGithubWebhook();
+
+  const { data: webhookInfo, refetch: refetchWebhook } = useGetProjectWebhook(projectId, {
+    query: { enabled: false, queryKey: getGetProjectWebhookQueryKey(projectId) },
+  });
 
   const [newKey, setNewKey] = useState("");
   const [newValue, setNewValue] = useState("");
   const [newScope, setNewScope] = useState<"all" | "build" | "runtime">("all");
   const [newEncrypted, setNewEncrypted] = useState(false);
   const [revealedVars, setRevealedVars] = useState<Set<number>>(new Set());
+  const [copiedUrl, setCopiedUrl] = useState(false);
 
   if (projectLoading) {
     return (
@@ -307,10 +314,11 @@ export default function ProjectDetailPage() {
         </TabsContent>
 
         {/* Settings tab */}
-        <TabsContent value="settings" className="mt-4">
+        <TabsContent value="settings" className="mt-4 space-y-4">
+          {/* Build settings */}
           <div className="bg-card border border-border rounded-lg p-6 space-y-4">
-            <h3 className="font-medium">Project Settings</h3>
-            <div className="grid grid-cols-1 gap-3 text-sm">
+            <h3 className="font-medium">Build Settings</h3>
+            <div className="grid grid-cols-1 gap-0 text-sm">
               {[
                 { label: "Framework", value: project.framework ?? "—" },
                 { label: "Build command", value: project.buildCommand ?? "—" },
@@ -318,12 +326,129 @@ export default function ProjectDetailPage() {
                 { label: "Branch", value: project.branch },
                 { label: "Created", value: formatDistanceToNow(new Date(project.createdAt), { addSuffix: true }) },
               ].map(s => (
-                <div key={s.label} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                <div key={s.label} className="flex items-center justify-between py-2.5 border-b border-border last:border-0">
                   <span className="text-muted-foreground">{s.label}</span>
                   <code className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{s.value}</code>
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Webhook section */}
+          <div className="bg-card border border-border rounded-lg p-6 space-y-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Webhook className="w-4 h-4 text-primary" />
+                <h3 className="font-medium">GitHub Webhook</h3>
+              </div>
+              {!webhookInfo && (
+                <Button size="sm" variant="outline" className="gap-1.5 h-7 text-xs" onClick={() => refetchWebhook()} data-testid="button-reveal-webhook">
+                  Show webhook URL
+                </Button>
+              )}
+            </div>
+
+            {!webhookInfo ? (
+              <p className="text-sm text-muted-foreground">
+                Auto-deploy on every <code className="bg-muted px-1 py-0.5 rounded text-xs">git push</code>. Click "Show webhook URL" to generate your endpoint.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {/* Webhook URL */}
+                <div className="space-y-1.5">
+                  <p className="text-xs text-muted-foreground">Add this URL in your GitHub repo under <strong>Settings → Webhooks → Add webhook</strong>. Set content type to <code className="bg-muted px-1 py-0.5 rounded">application/json</code> and select <strong>Push events</strong>.</p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 text-xs font-mono bg-muted border border-border rounded px-3 py-2 truncate text-muted-foreground">
+                      {webhookInfo.webhookUrl}
+                    </code>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 h-8 flex-shrink-0"
+                      onClick={() => {
+                        navigator.clipboard.writeText(webhookInfo.webhookUrl);
+                        setCopiedUrl(true);
+                        setTimeout(() => setCopiedUrl(false), 2000);
+                      }}
+                      data-testid="button-copy-webhook-url"
+                    >
+                      {copiedUrl ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copiedUrl ? "Copied!" : "Copy"}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Test button */}
+                <div className="flex items-center gap-3">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5"
+                    disabled={triggerWebhook.isPending}
+                    onClick={() => {
+                      triggerWebhook.mutate(
+                        {
+                          token: webhookInfo.token,
+                          data: {
+                            ref: `refs/heads/${project.branch}`,
+                            head_commit: { id: Math.random().toString(16).slice(2).padEnd(40, "0"), message: "chore: test webhook push" },
+                            pusher: { name: "you" },
+                          },
+                        },
+                        {
+                          onSuccess: (result) => {
+                            refetchWebhook();
+                            toast({ title: "Test push sent", description: `Deployment #${result.deploymentId} triggered.` });
+                          },
+                        }
+                      );
+                    }}
+                    data-testid="button-test-webhook"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${triggerWebhook.isPending ? "animate-spin" : ""}`} />
+                    {triggerWebhook.isPending ? "Sending..." : "Send test push"}
+                  </Button>
+                  <span className="text-xs text-muted-foreground">Simulates a GitHub push to trigger a deployment</span>
+                </div>
+
+                {/* Recent events */}
+                {webhookInfo.events.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Recent Push Events</p>
+                    <div className="space-y-1.5">
+                      {webhookInfo.events.map(event => (
+                        <div key={event.id} className="bg-muted/40 border border-border rounded-lg px-4 py-3 flex items-start gap-3">
+                          <GitCommit className="w-3.5 h-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <code className="text-xs font-mono text-primary">{event.ref.replace("refs/heads/", "")}</code>
+                              {event.commitSha && <code className="text-xs font-mono text-muted-foreground">{event.commitSha.slice(0, 7)}</code>}
+                              {event.pusher && <span className="text-xs text-muted-foreground">by {event.pusher}</span>}
+                            </div>
+                            {event.commitMessage && <p className="text-xs text-muted-foreground mt-0.5 truncate">{event.commitMessage}</p>}
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {event.deploymentId && (
+                              <button
+                                className="text-xs text-primary hover:underline"
+                                onClick={() => setLocation(`/deployments/${event.deploymentId}`)}
+                              >
+                                #{event.deploymentId}
+                              </button>
+                            )}
+                            <span className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(event.receivedAt), { addSuffix: true })}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {webhookInfo.events.length === 0 && (
+                  <p className="text-xs text-muted-foreground">No push events received yet. Send a test push above or configure your GitHub repo.</p>
+                )}
+              </div>
+            )}
           </div>
         </TabsContent>
       </Tabs>

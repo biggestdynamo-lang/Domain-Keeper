@@ -424,6 +424,48 @@ export interface InfrastructureStatus {
   memoryUsagePercent: number;
 }
 
+export interface WebhookEvent {
+  id: number;
+  projectId: number;
+  ref: string;
+  /** @nullable */
+  commitSha?: string | null;
+  /** @nullable */
+  commitMessage?: string | null;
+  /** @nullable */
+  pusher?: string | null;
+  /** @nullable */
+  deploymentId?: number | null;
+  receivedAt: string;
+}
+
+export interface WebhookInfo {
+  token: string;
+  webhookUrl: string;
+  events: WebhookEvent[];
+}
+
+export type GithubPushPayloadHeadCommit = {
+  id?: string;
+  message?: string;
+};
+
+export type GithubPushPayloadPusher = {
+  name?: string;
+};
+
+export interface GithubPushPayload {
+  ref?: string;
+  head_commit?: GithubPushPayloadHeadCommit;
+  pusher?: GithubPushPayloadPusher;
+}
+
+export interface WebhookTriggerResult {
+  received: boolean;
+  deploymentId: number;
+  event: WebhookEvent;
+}
+
 export type GetAnalyticsSummaryParams = {
 period?: GetAnalyticsSummaryPeriod;
 };
