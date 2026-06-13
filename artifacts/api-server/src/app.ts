@@ -1,10 +1,12 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import path from "path";
 import { existsSync } from "fs";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { db, metricsTable } from "@workspace/db";
+import { sql } from "drizzle-orm";
 
 const app: Express = express();
 
@@ -31,6 +33,19 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+async function incrementRequestCount(_req: Request, _res: Response, next: NextFunction) {
+  const today = new Date().toISOString().split("T")[0];
+  db.execute(
+    sql`INSERT INTO metrics (date, request_count, updated_at)
+        VALUES (${today}, 1, NOW())
+        ON CONFLICT (date) DO UPDATE
+        SET request_count = metrics.request_count + 1,
+            updated_at = NOW()`
+  ).catch(() => {});
+  next();
+}
+
+app.use("/api", incrementRequestCount);
 app.use("/api", router);
 
 if (process.env.NODE_ENV === "production") {

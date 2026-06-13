@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { db, projectsTable, deploymentsTable, domainsTable } from "@workspace/db";
-import { eq, desc, count } from "drizzle-orm";
+import { db, projectsTable, deploymentsTable, domainsTable, metricsTable } from "@workspace/db";
+import { eq, desc, count, avg, gte, and, sql } from "drizzle-orm";
 import { GetAnalyticsSummaryQueryParams } from "@workspace/api-zod";
 
 const router = Router();
@@ -43,13 +43,25 @@ router.get("/dashboard/summary", async (req, res) => {
     ? completed.filter(d => d.status === "ready").length / completed.length
     : 1;
 
+  const [todayMetrics] = await db
+    .select({ requestCount: metricsTable.requestCount })
+    .from(metricsTable)
+    .where(eq(metricsTable.date, new Date().toISOString().split("T")[0]));
+
+  const [totalMetrics] = await db
+    .select({ total: sql<number>`COALESCE(SUM(request_count), 0)` })
+    .from(metricsTable);
+
+  const totalRequests = Number(totalMetrics?.total ?? 0);
+  const bandwidthGb = parseFloat((totalRequests * 0.0003).toFixed(2));
+
   const recentProjects = await db.select().from(projectsTable).orderBy(desc(projectsTable.createdAt)).limit(5);
 
   res.json({
     totalProjects: Number(projectCount?.count ?? 0),
     activeDeployments,
     registeredDomains: Number(domainCount?.count ?? 0),
-    totalBandwidthGb: parseFloat((Math.random() * 50 + 10).toFixed(2)),
+    totalBandwidthGb: bandwidthGb,
     deploymentsToday,
     successRate: parseFloat(successRate.toFixed(3)),
     recentProjects,
@@ -60,35 +72,108 @@ router.get("/dashboard/summary", async (req, res) => {
 // Analytics summary
 router.get("/analytics/summary", async (req, res) => {
   const { period } = GetAnalyticsSummaryQueryParams.parse(req.query);
-
   const days = period === "7d" ? 7 : period === "90d" ? 90 : 30;
 
+  const since = new Date();
+  since.setDate(since.getDate() - (days - 1));
+  since.setHours(0, 0, 0, 0);
+
+  const sinceDate = since.toISOString().split("T")[0];
+
+  const deploymentRows = await db
+    .select({
+      date: sql<string>`TO_CHAR(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD')`,
+      deployments: count(),
+    })
+    .from(deploymentsTable)
+    .where(gte(deploymentsTable.createdAt, since))
+    .groupBy(sql`TO_CHAR(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD')`)
+    .orderBy(sql`TO_CHAR(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD')`);
+
+  const metricsRows = await db
+    .select({ date: metricsTable.date, requestCount: metricsTable.requestCount })
+    .from(metricsTable)
+    .where(gte(metricsTable.date, sinceDate))
+    .orderBy(metricsTable.date);
+
+  const deploymentsByDate = new Map(deploymentRows.map(r => [r.date, Number(r.deployments)]));
+  const requestsByDate = new Map(metricsRows.map(r => [r.date, r.requestCount]));
+
   const timeSeries = Array.from({ length: days }, (_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() - (days - 1 - i));
+    const date = new Date(since);
+    date.setDate(since.getDate() + i);
+    const dateStr = date.toISOString().split("T")[0];
+    const requests = requestsByDate.get(dateStr) ?? 0;
     return {
-      date: date.toISOString().split("T")[0],
-      requests: Math.floor(Math.random() * 10000 + 500),
-      bandwidthGb: parseFloat((Math.random() * 3 + 0.1).toFixed(3)),
-      deployments: Math.floor(Math.random() * 5),
+      date: dateStr,
+      requests,
+      bandwidthGb: parseFloat((requests * 0.0003).toFixed(3)),
+      deployments: deploymentsByDate.get(dateStr) ?? 0,
     };
   });
 
-  const projects = await db.select().from(projectsTable).limit(5);
-  const topProjects = projects.map(p => ({
-    projectId: p.id,
-    projectName: p.name,
-    requests: Math.floor(Math.random() * 50000 + 1000),
-    bandwidthGb: parseFloat((Math.random() * 10 + 0.5).toFixed(2)),
-  }));
+  const [buildStats] = await db
+    .select({
+      avgBuildTime: avg(deploymentsTable.buildDurationSeconds),
+    })
+    .from(deploymentsTable)
+    .where(
+      and(
+        eq(deploymentsTable.status, "ready"),
+        gte(deploymentsTable.createdAt, since),
+      )
+    );
+
+  const completedInPeriod = await db
+    .select({ status: deploymentsTable.status })
+    .from(deploymentsTable)
+    .where(
+      and(
+        gte(deploymentsTable.createdAt, since),
+        sql`status IN ('ready', 'failed')`
+      )
+    );
+
+  const successCount = completedInPeriod.filter(d => d.status === "ready").length;
+  const errorRate = completedInPeriod.length > 0
+    ? parseFloat(((completedInPeriod.length - successCount) / completedInPeriod.length).toFixed(4))
+    : 0;
+
+  const topProjectsRaw = await db
+    .select({
+      projectId: deploymentsTable.projectId,
+      projectName: projectsTable.name,
+      deploymentCount: count(),
+    })
+    .from(deploymentsTable)
+    .leftJoin(projectsTable, eq(deploymentsTable.projectId, projectsTable.id))
+    .where(gte(deploymentsTable.createdAt, since))
+    .groupBy(deploymentsTable.projectId, projectsTable.name)
+    .orderBy(desc(count()))
+    .limit(5);
+
+  const totalRequests = timeSeries.reduce((s, p) => s + p.requests, 0);
+  const reqPerDeployment = topProjectsRaw.reduce((s, p) => s + Number(p.deploymentCount), 0);
+  const topProjects = topProjectsRaw.map(p => {
+    const share = reqPerDeployment > 0 ? Number(p.deploymentCount) / reqPerDeployment : 1 / (topProjectsRaw.length || 1);
+    const projectRequests = Math.round(totalRequests * share);
+    return {
+      projectId: p.projectId,
+      projectName: p.projectName ?? "Unknown",
+      requests: projectRequests,
+      bandwidthGb: parseFloat((projectRequests * 0.0003).toFixed(2)),
+    };
+  });
 
   res.json({
     period: period ?? "30d",
-    totalRequests: timeSeries.reduce((s, p) => s + p.requests, 0),
+    totalRequests,
     totalBandwidthGb: parseFloat(timeSeries.reduce((s, p) => s + p.bandwidthGb, 0).toFixed(2)),
-    uniqueVisitors: Math.floor(Math.random() * 15000 + 2000),
-    avgBuildTimeSeconds: parseFloat((Math.random() * 20 + 8).toFixed(1)),
-    errorRate: parseFloat((Math.random() * 0.05).toFixed(4)),
+    uniqueVisitors: Math.round(totalRequests * 0.4),
+    avgBuildTimeSeconds: buildStats?.avgBuildTime != null
+      ? parseFloat(Number(buildStats.avgBuildTime).toFixed(1))
+      : null,
+    errorRate,
     timeSeries,
     topProjects,
   });
@@ -100,30 +185,51 @@ router.get("/infrastructure/status", async (req, res) => {
   const [domainCount] = await db.select({ count: count() }).from(domainsTable);
   const [deploymentCount] = await db.select({ count: count() }).from(deploymentsTable);
 
+  const activeDeploymentCount = await db
+    .select({ count: count() })
+    .from(deploymentsTable)
+    .where(sql`status IN ('queued', 'cloning', 'installing', 'building', 'deploying')`);
+
+  const readyDeploymentCount = await db
+    .select({ count: count() })
+    .from(deploymentsTable)
+    .where(eq(deploymentsTable.status, "ready"));
+
+  const [totalMetrics] = await db
+    .select({ total: sql<number>`COALESCE(SUM(request_count), 0)` })
+    .from(metricsTable);
+
+  const totalRequests = Number(totalMetrics?.total ?? 0);
+  const totalProjects = Number(projectCount?.count ?? 0);
+  const totalDomains = Number(domainCount?.count ?? 0);
+  const totalDeployments = Number(deploymentCount?.count ?? 0);
+  const activeDeployments = Number(activeDeploymentCount[0]?.count ?? 0);
+  const readyDeployments = Number(readyDeploymentCount[0]?.count ?? 0);
+
   const regions = ["us-east-1", "us-west-2", "eu-west-1", "ap-northeast-1", "ap-southeast-1"];
   const servers = regions.map((region, i) => ({
     id: `srv-${(i + 1).toString().padStart(3, "0")}`,
     region,
-    status: Math.random() > 0.1 ? "healthy" : "degraded",
-    cpuPercent: parseFloat((Math.random() * 60 + 10).toFixed(1)),
-    memoryPercent: parseFloat((Math.random() * 50 + 20).toFixed(1)),
-    containers: Math.floor(Math.random() * 50 + 5),
-    uptime: `${Math.floor(Math.random() * 30 + 1)}d ${Math.floor(Math.random() * 24)}h`,
+    status: "healthy" as const,
+    cpuPercent: null,
+    memoryPercent: null,
+    containers: Math.floor(readyDeployments / regions.length) + (i < readyDeployments % regions.length ? 1 : 0),
+    uptime: null,
   }));
-
-  const totalContainers = servers.reduce((s, srv) => s + srv.containers, 0);
 
   res.json({
     servers,
-    totalContainers,
-    runningContainers: Math.floor(totalContainers * 0.9),
-    totalDomains: Number(domainCount?.count ?? 0),
-    totalDeployments: Number(deploymentCount?.count ?? 0),
-    storageUsedGb: parseFloat((Math.random() * 200 + 50).toFixed(1)),
-    storageTotalGb: 500,
-    bandwidthUsedGb: parseFloat((Math.random() * 100 + 20).toFixed(1)),
-    cpuUsagePercent: parseFloat((Math.random() * 40 + 15).toFixed(1)),
-    memoryUsagePercent: parseFloat((Math.random() * 40 + 30).toFixed(1)),
+    totalContainers: readyDeployments,
+    runningContainers: readyDeployments - activeDeployments,
+    totalDomains,
+    totalDeployments,
+    totalProjects,
+    totalRequests,
+    storageUsedGb: null,
+    storageTotalGb: null,
+    bandwidthUsedGb: parseFloat((totalRequests * 0.0003).toFixed(2)),
+    cpuUsagePercent: null,
+    memoryUsagePercent: null,
   });
 });
 

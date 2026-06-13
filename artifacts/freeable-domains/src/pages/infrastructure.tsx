@@ -17,15 +17,31 @@ const REGION_LABELS: Record<string, string> = {
   "ap-southeast-1": "Asia Pacific (Singapore)",
 };
 
+function pct(v: number | null | undefined): string {
+  return v != null ? `${v.toFixed(1)}%` : "N/A";
+}
+
 export default function InfrastructurePage() {
   const { data, isLoading } = useGetInfrastructureStatus();
+
+  const storagePercent = (data?.storageUsedGb != null && data?.storageTotalGb != null && data.storageTotalGb > 0)
+    ? (data.storageUsedGb / data.storageTotalGb) * 100
+    : null;
+
+  const bandwidthPercent = data?.bandwidthUsedGb != null
+    ? Math.min((data.bandwidthUsedGb / 200) * 100, 100)
+    : null;
 
   const metrics = data ? [
     { label: "CPU Usage", value: data.cpuUsagePercent, icon: Cpu, color: "text-blue-400" },
     { label: "Memory Usage", value: data.memoryUsagePercent, icon: MemoryStick, color: "text-purple-400" },
-    { label: "Storage", value: (data.storageUsedGb / data.storageTotalGb) * 100, icon: HardDrive, color: "text-orange-400" },
-    { label: "Bandwidth", value: Math.min((data.bandwidthUsedGb / 200) * 100, 100), icon: Wifi, color: "text-green-400" },
+    { label: "Storage", value: storagePercent, icon: HardDrive, color: "text-orange-400" },
+    { label: "Bandwidth", value: bandwidthPercent, icon: Wifi, color: "text-green-400" },
   ] : [];
+
+  const storageLabel = data?.storageUsedGb != null && data?.storageTotalGb != null
+    ? `${data.storageUsedGb.toFixed(0)} GB of ${data.storageTotalGb} GB`
+    : "N/A";
 
   return (
     <div className="space-y-6">
@@ -40,7 +56,7 @@ export default function InfrastructurePage() {
           { label: "Total Containers", value: data?.totalContainers ?? 0, sub: `${data?.runningContainers ?? 0} running`, icon: Box, color: "text-blue-400" },
           { label: "Domains", value: data?.totalDomains ?? 0, sub: "Registered", icon: Globe, color: "text-purple-400" },
           { label: "Deployments", value: data?.totalDeployments ?? 0, sub: "All time", icon: Zap, color: "text-green-400" },
-          { label: "Storage Used", value: `${data?.storageUsedGb.toFixed(0)}GB`, sub: `of ${data?.storageTotalGb}GB`, icon: HardDrive, color: "text-orange-400" },
+          { label: "Storage Used", value: storageLabel, sub: "", icon: HardDrive, color: "text-orange-400" },
         ].map(s => (
           <div key={s.label} className="bg-card border border-border rounded-lg p-4" data-testid={`card-infra-${s.label.toLowerCase().replace(/ /g, "-")}`}>
             <div className="flex items-center justify-between mb-2">
@@ -48,7 +64,7 @@ export default function InfrastructurePage() {
               <s.icon className={`w-4 h-4 ${s.color}`} />
             </div>
             <p className="text-2xl font-bold">{s.value}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">{s.sub}</p>
+            {s.sub && <p className="text-xs text-muted-foreground mt-0.5">{s.sub}</p>}
           </div>
         ))}
       </div>
@@ -61,9 +77,9 @@ export default function InfrastructurePage() {
             <div key={m.label} className="space-y-1.5" data-testid={`meter-${m.label.toLowerCase().replace(/ /g, "-")}`}>
               <div className="flex items-center justify-between text-xs">
                 <span className="flex items-center gap-1.5"><m.icon className={`w-3.5 h-3.5 ${m.color}`} />{m.label}</span>
-                <span className="text-muted-foreground">{m.value.toFixed(1)}%</span>
+                <span className="text-muted-foreground">{m.value != null ? `${m.value.toFixed(1)}%` : "N/A"}</span>
               </div>
-              <Progress value={m.value} className="h-1.5" />
+              <Progress value={m.value ?? 0} className="h-1.5" />
             </div>
           ))}
       </div>
@@ -89,15 +105,18 @@ export default function InfrastructurePage() {
                     <span className={`text-xs ${server.status === "healthy" ? "text-green-400" : server.status === "degraded" ? "text-yellow-400" : "text-red-400"}`}>{server.status}</span>
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">{REGION_LABELS[server.region] ?? server.region} · {server.containers} containers · up {server.uptime}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {REGION_LABELS[server.region] ?? server.region} · {server.containers} containers
+                  {server.uptime != null ? ` · up ${server.uptime}` : ""}
+                </p>
               </div>
               <div className="flex gap-4 text-xs text-muted-foreground flex-shrink-0">
                 <div className="text-right">
-                  <p className="font-medium">{server.cpuPercent}%</p>
+                  <p className="font-medium">{pct(server.cpuPercent)}</p>
                   <p className="text-xs">CPU</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-medium">{server.memoryPercent}%</p>
+                  <p className="font-medium">{pct(server.memoryPercent)}</p>
                   <p className="text-xs">RAM</p>
                 </div>
               </div>

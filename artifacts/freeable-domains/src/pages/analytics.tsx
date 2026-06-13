@@ -23,7 +23,7 @@ export default function AnalyticsPage() {
     { label: "Total Requests", value: data.totalRequests.toLocaleString(), icon: TrendingUp, color: "text-blue-400" },
     { label: "Unique Visitors", value: data.uniqueVisitors.toLocaleString(), icon: Globe, color: "text-purple-400" },
     { label: "Bandwidth", value: `${data.totalBandwidthGb.toFixed(1)} GB`, icon: Zap, color: "text-green-400" },
-    { label: "Avg Build Time", value: `${data.avgBuildTimeSeconds.toFixed(1)}s`, icon: Clock, color: "text-orange-400" },
+    { label: "Avg Build Time", value: data.avgBuildTimeSeconds != null ? `${data.avgBuildTimeSeconds.toFixed(1)}s` : "—", icon: Clock, color: "text-orange-400" },
     { label: "Error Rate", value: `${(data.errorRate * 100).toFixed(2)}%`, icon: AlertTriangle, color: "text-red-400" },
   ] : [];
 
