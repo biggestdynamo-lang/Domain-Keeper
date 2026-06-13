@@ -250,7 +250,7 @@ async function simulateBuild(deploymentId: number, projectId: number) {
   const duration = 15 + Math.random() * 30;
   // Use the app's own real domain so deployment URLs resolve in DNS
   // (same wildcard-DNS pattern real platforms use: *.vercel.app → their load balancer)
-  const appDomain = (process.env.REPLIT_DOMAINS?.split(",")[0] ?? process.env.REPLIT_DEV_DOMAIN ?? "").trim();
+  const appDomain = (process.env.APP_DOMAIN ?? process.env.REPLIT_DOMAINS?.split(",")[0] ?? process.env.REPLIT_DEV_DOMAIN ?? "freeabledomain.netlify.app").trim();
   const url = appDomain
     ? `https://${appDomain}/preview/deployment/${deploymentId}`
     : `/preview/deployment/${deploymentId}`;
