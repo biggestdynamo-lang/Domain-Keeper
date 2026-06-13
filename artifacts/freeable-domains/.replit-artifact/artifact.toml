@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Freeable Domains"
+version = "1.0.0"
+id = "artifacts/freeable-domains"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20564
+
+[services.development]
+run = "pnpm --filter @workspace/freeable-domains run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/freeable-domains", "run", "build" ]
+publicDir = "artifacts/freeable-domains/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20564"
+BASE_PATH = "/"

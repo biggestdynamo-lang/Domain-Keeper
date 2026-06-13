@@ -1,22 +1,38 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Freeable Domains API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: projects
+    description: Project management
+  - name: deployments
+    description: Deployment operations
+  - name: domains
+    description: Domain registry & management
+  - name: dns
+    description: DNS record management
+  - name: env
+    description: Environment variable management
+  - name: builds
+    description: Build pipeline
+  - name: analytics
+    description: Analytics & metrics
+  - name: github
+    description: GitHub import & detection
+  - name: infrastructure
+    description: Infrastructure status
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +40,592 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ── Dashboard & Analytics ─────────────────────────────────────────────────
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [analytics]
+      summary: Get platform-wide dashboard summary
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /analytics/summary:
+    get:
+      operationId: getAnalyticsSummary
+      tags: [analytics]
+      summary: Get analytics summary with time-series data
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [7d, 30d, 90d]
+            default: 30d
+      responses:
+        "200":
+          description: Analytics data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsSummary"
+
+  # ── Projects ──────────────────────────────────────────────────────────────
+
+  /projects:
+    get:
+      operationId: listProjects
+      tags: [projects]
+      summary: List all projects
+      responses:
+        "200":
+          description: Project list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+    post:
+      operationId: createProject
+      tags: [projects]
+      summary: Create a new project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+
+  /projects/{id}:
+    get:
+      operationId: getProject
+      tags: [projects]
+      summary: Get a project by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Project details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateProject
+      tags: [projects]
+      summary: Update project settings
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+    delete:
+      operationId: deleteProject
+      tags: [projects]
+      summary: Delete a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /projects/{id}/summary:
+    get:
+      operationId: getProjectSummary
+      tags: [projects]
+      summary: Get project summary with recent activity
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Project summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectSummary"
+
+  # ── Deployments ───────────────────────────────────────────────────────────
+
+  /projects/{id}/deployments:
+    get:
+      operationId: listDeployments
+      tags: [deployments]
+      summary: List deployments for a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deployment list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Deployment"
+    post:
+      operationId: createDeployment
+      tags: [deployments]
+      summary: Trigger a new deployment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeploymentInput"
+      responses:
+        "201":
+          description: Deployment triggered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Deployment"
+
+  /deployments/{id}:
+    get:
+      operationId: getDeployment
+      tags: [deployments]
+      summary: Get a deployment by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deployment details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Deployment"
+
+  /deployments/{id}/rollback:
+    post:
+      operationId: rollbackDeployment
+      tags: [deployments]
+      summary: Rollback to this deployment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Rollback successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Deployment"
+
+  /deployments/{id}/logs:
+    get:
+      operationId: getDeploymentLogs
+      tags: [builds]
+      summary: Get build/deployment logs
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Log entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LogEntry"
+
+  # ── Domains ───────────────────────────────────────────────────────────────
+
+  /domains/search:
+    get:
+      operationId: searchDomains
+      tags: [domains]
+      summary: Search & check domain availability
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Domain search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DomainSearchResult"
+
+  /domains:
+    get:
+      operationId: listDomains
+      tags: [domains]
+      summary: List all registered domains
+      responses:
+        "200":
+          description: Domain list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Domain"
+    post:
+      operationId: registerDomain
+      tags: [domains]
+      summary: Register a domain
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DomainInput"
+      responses:
+        "201":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Domain"
+
+  /domains/{id}:
+    get:
+      operationId: getDomain
+      tags: [domains]
+      summary: Get domain details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Domain details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Domain"
+    delete:
+      operationId: deleteDomain
+      tags: [domains]
+      summary: Delete / release a domain
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /domains/{id}/attach:
+    post:
+      operationId: attachDomainToProject
+      tags: [domains]
+      summary: Attach domain to a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DomainAttach"
+      responses:
+        "200":
+          description: Attached
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Domain"
+
+  # ── DNS Records ───────────────────────────────────────────────────────────
+
+  /domains/{id}/dns:
+    get:
+      operationId: listDnsRecords
+      tags: [dns]
+      summary: List DNS records for a domain
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: DNS records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DnsRecord"
+    post:
+      operationId: createDnsRecord
+      tags: [dns]
+      summary: Create a DNS record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DnsRecordInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DnsRecord"
+
+  /dns/{id}:
+    put:
+      operationId: updateDnsRecord
+      tags: [dns]
+      summary: Update a DNS record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DnsRecordUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DnsRecord"
+    delete:
+      operationId: deleteDnsRecord
+      tags: [dns]
+      summary: Delete a DNS record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Environment Variables ─────────────────────────────────────────────────
+
+  /projects/{id}/env:
+    get:
+      operationId: listEnvVars
+      tags: [env]
+      summary: List environment variables for a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Env vars
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EnvVar"
+    post:
+      operationId: createEnvVar
+      tags: [env]
+      summary: Create an environment variable
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EnvVarInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvVar"
+
+  /env/{id}:
+    put:
+      operationId: updateEnvVar
+      tags: [env]
+      summary: Update an environment variable
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EnvVarUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvVar"
+    delete:
+      operationId: deleteEnvVar
+      tags: [env]
+      summary: Delete an environment variable
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── GitHub Import ─────────────────────────────────────────────────────────
+
+  /github/detect:
+    post:
+      operationId: detectFramework
+      tags: [github]
+      summary: Detect framework from a GitHub repo URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GithubDetectInput"
+      responses:
+        "200":
+          description: Detection result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FrameworkDetectionResult"
+
+  /github/import:
+    post:
+      operationId: importFromGithub
+      tags: [github]
+      summary: Import a project from GitHub and start deployment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GithubImportInput"
+      responses:
+        "201":
+          description: Project created and deployment triggered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GithubImportResult"
+
+  # ── Infrastructure ────────────────────────────────────────────────────────
+
+  /infrastructure/status:
+    get:
+      operationId: getInfrastructureStatus
+      tags: [infrastructure]
+      summary: Get infrastructure status overview
+      responses:
+        "200":
+          description: Infrastructure status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InfrastructureStatus"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +633,588 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    # ── Dashboard & Analytics ───────────────────────────────────────────────
+
+    DashboardSummary:
+      type: object
+      properties:
+        totalProjects:
+          type: integer
+        activeDeployments:
+          type: integer
+        registeredDomains:
+          type: integer
+        totalBandwidthGb:
+          type: number
+        deploymentsToday:
+          type: integer
+        successRate:
+          type: number
+        recentProjects:
+          type: array
+          items:
+            $ref: "#/components/schemas/Project"
+        recentDeployments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Deployment"
+      required:
+        - totalProjects
+        - activeDeployments
+        - registeredDomains
+        - totalBandwidthGb
+        - deploymentsToday
+        - successRate
+        - recentProjects
+        - recentDeployments
+
+    AnalyticsSummary:
+      type: object
+      properties:
+        period:
+          type: string
+        totalRequests:
+          type: integer
+        totalBandwidthGb:
+          type: number
+        uniqueVisitors:
+          type: integer
+        avgBuildTimeSeconds:
+          type: number
+        errorRate:
+          type: number
+        timeSeries:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimeSeriesPoint"
+        topProjects:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectMetric"
+      required:
+        - period
+        - totalRequests
+        - totalBandwidthGb
+        - uniqueVisitors
+        - avgBuildTimeSeconds
+        - errorRate
+        - timeSeries
+        - topProjects
+
+    TimeSeriesPoint:
+      type: object
+      properties:
+        date:
+          type: string
+        requests:
+          type: integer
+        bandwidthGb:
+          type: number
+        deployments:
+          type: integer
+      required: [date, requests, bandwidthGb, deployments]
+
+    ProjectMetric:
+      type: object
+      properties:
+        projectId:
+          type: integer
+        projectName:
+          type: string
+        requests:
+          type: integer
+        bandwidthGb:
+          type: number
+      required: [projectId, projectName, requests, bandwidthGb]
+
+    # ── Projects ────────────────────────────────────────────────────────────
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        repoUrl:
+          type: ["string", "null"]
+        branch:
+          type: string
+        framework:
+          type: ["string", "null"]
+        packageManager:
+          type: ["string", "null"]
+        buildCommand:
+          type: ["string", "null"]
+        outputDir:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [idle, building, deploying, active, failed, stopped]
+        deploymentUrl:
+          type: ["string", "null"]
+        sessionId:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - name
+        - branch
+        - status
+        - createdAt
+        - updatedAt
+
+    ProjectInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        repoUrl:
+          type: string
+        branch:
+          type: string
+        framework:
+          type: string
+        buildCommand:
+          type: string
+        outputDir:
+          type: string
+        sessionId:
+          type: string
+      required: [name]
+
+    ProjectUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        branch:
+          type: string
+        buildCommand:
+          type: string
+        outputDir:
+          type: string
+        status:
+          type: string
+
+    ProjectSummary:
+      type: object
+      properties:
+        project:
+          $ref: "#/components/schemas/Project"
+        latestDeployment:
+          $ref: "#/components/schemas/Deployment"
+        deploymentCount:
+          type: integer
+        successfulDeployments:
+          type: integer
+        failedDeployments:
+          type: integer
+        avgBuildTimeSeconds:
+          type: number
+        domainCount:
+          type: integer
+        envVarCount:
+          type: integer
+        requestsToday:
+          type: integer
+        bandwidthTodayGb:
+          type: number
+      required:
+        - project
+        - deploymentCount
+        - successfulDeployments
+        - failedDeployments
+        - avgBuildTimeSeconds
+        - domainCount
+        - envVarCount
+        - requestsToday
+        - bandwidthTodayGb
+
+    # ── Deployments ─────────────────────────────────────────────────────────
+
+    Deployment:
+      type: object
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        projectName:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [queued, cloning, installing, building, deploying, ready, failed, cancelled, rolled_back]
+        url:
+          type: ["string", "null"]
+        commitSha:
+          type: ["string", "null"]
+        commitMessage:
+          type: ["string", "null"]
+        branch:
+          type: string
+        buildDurationSeconds:
+          type: ["number", "null"]
+        triggeredBy:
+          type: string
+          enum: [manual, github_push, api, rollback]
+        isProduction:
+          type: boolean
+        createdAt:
+          type: string
+        completedAt:
+          type: ["string", "null"]
+      required:
+        - id
+        - projectId
+        - status
+        - branch
+        - triggeredBy
+        - isProduction
+        - createdAt
+
+    DeploymentInput:
+      type: object
+      properties:
+        branch:
+          type: string
+        commitSha:
+          type: string
+        isProduction:
+          type: boolean
+      required: []
+
+    # ── Logs ────────────────────────────────────────────────────────────────
+
+    LogEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        deploymentId:
+          type: integer
+        level:
+          type: string
+          enum: [info, warn, error, success, debug]
+        stage:
+          type: string
+          enum: [clone, install, build, deploy, verify]
+        message:
+          type: string
+        timestamp:
+          type: string
+      required: [id, deploymentId, level, stage, message, timestamp]
+
+    # ── Domains ─────────────────────────────────────────────────────────────
+
+    Domain:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        tld:
+          type: string
+        fullDomain:
+          type: string
+        status:
+          type: string
+          enum: [active, pending, expired, suspended, transferring]
+        projectId:
+          type: ["integer", "null"]
+        projectName:
+          type: ["string", "null"]
+        registeredAt:
+          type: string
+        expiresAt:
+          type: string
+        autoRenew:
+          type: boolean
+        sslEnabled:
+          type: boolean
+        sessionId:
+          type: ["string", "null"]
+      required:
+        - id
+        - name
+        - tld
+        - fullDomain
+        - status
+        - registeredAt
+        - expiresAt
+        - autoRenew
+        - sslEnabled
+
+    DomainInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        tld:
+          type: string
+          minLength: 1
+        projectId:
+          type: integer
+        autoRenew:
+          type: boolean
+        sessionId:
+          type: string
+      required: [name, tld]
+
+    DomainSearchResult:
+      type: object
+      properties:
+        name:
+          type: string
+        tld:
+          type: string
+        fullDomain:
+          type: string
+        available:
+          type: boolean
+        premium:
+          type: boolean
+      required: [name, tld, fullDomain, available, premium]
+
+    DomainAttach:
+      type: object
+      properties:
+        projectId:
+          type: integer
+      required: [projectId]
+
+    # ── DNS Records ─────────────────────────────────────────────────────────
+
+    DnsRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        domainId:
+          type: integer
+        type:
+          type: string
+          enum: [A, AAAA, CNAME, TXT, MX, NS, SRV, CAA, PTR, ALIAS]
+        name:
+          type: string
+        value:
+          type: string
+        ttl:
+          type: integer
+        priority:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+      required: [id, domainId, type, name, value, ttl, createdAt]
+
+    DnsRecordInput:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [A, AAAA, CNAME, TXT, MX, NS, SRV, CAA, PTR, ALIAS]
+        name:
+          type: string
+          minLength: 1
+        value:
+          type: string
+          minLength: 1
+        ttl:
+          type: integer
+        priority:
+          type: integer
+      required: [type, name, value]
+
+    DnsRecordUpdate:
+      type: object
+      properties:
+        type:
+          type: string
+        name:
+          type: string
+        value:
+          type: string
+        ttl:
+          type: integer
+        priority:
+          type: integer
+
+    # ── Environment Variables ───────────────────────────────────────────────
+
+    EnvVar:
+      type: object
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        key:
+          type: string
+        value:
+          type: string
+        encrypted:
+          type: boolean
+        scope:
+          type: string
+          enum: [build, runtime, all]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, projectId, key, value, encrypted, scope, createdAt, updatedAt]
+
+    EnvVarInput:
+      type: object
+      properties:
+        key:
+          type: string
+          minLength: 1
+        value:
+          type: string
+        encrypted:
+          type: boolean
+        scope:
+          type: string
+          enum: [build, runtime, all]
+      required: [key, value]
+
+    EnvVarUpdate:
+      type: object
+      properties:
+        key:
+          type: string
+        value:
+          type: string
+        encrypted:
+          type: boolean
+        scope:
+          type: string
+
+    # ── GitHub ──────────────────────────────────────────────────────────────
+
+    GithubDetectInput:
+      type: object
+      properties:
+        repoUrl:
+          type: string
+          minLength: 1
+      required: [repoUrl]
+
+    FrameworkDetectionResult:
+      type: object
+      properties:
+        repoUrl:
+          type: string
+        framework:
+          type: ["string", "null"]
+        language:
+          type: ["string", "null"]
+        packageManager:
+          type: ["string", "null"]
+        buildCommand:
+          type: ["string", "null"]
+        outputDir:
+          type: ["string", "null"]
+        detectedFiles:
+          type: array
+          items:
+            type: string
+      required: [repoUrl, detectedFiles]
+
+    GithubImportInput:
+      type: object
+      properties:
+        repoUrl:
+          type: string
+          minLength: 1
+        name:
+          type: string
+        branch:
+          type: string
+        sessionId:
+          type: string
+      required: [repoUrl]
+
+    GithubImportResult:
+      type: object
+      properties:
+        project:
+          $ref: "#/components/schemas/Project"
+        deployment:
+          $ref: "#/components/schemas/Deployment"
+        detectedFramework:
+          type: ["string", "null"]
+      required: [project, deployment]
+
+    # ── Infrastructure ──────────────────────────────────────────────────────
+
+    InfrastructureStatus:
+      type: object
+      properties:
+        servers:
+          type: array
+          items:
+            $ref: "#/components/schemas/ServerStatus"
+        totalContainers:
+          type: integer
+        runningContainers:
+          type: integer
+        totalDomains:
+          type: integer
+        totalDeployments:
+          type: integer
+        storageUsedGb:
+          type: number
+        storageTotalGb:
+          type: number
+        bandwidthUsedGb:
+          type: number
+        cpuUsagePercent:
+          type: number
+        memoryUsagePercent:
+          type: number
+      required:
+        - servers
+        - totalContainers
+        - runningContainers
+        - totalDomains
+        - totalDeployments
+        - storageUsedGb
+        - storageTotalGb
+        - bandwidthUsedGb
+        - cpuUsagePercent
+        - memoryUsagePercent
+
+    ServerStatus:
+      type: object
+      properties:
+        id:
+          type: string
+        region:
+          type: string
+        status:
+          type: string
+          enum: [healthy, degraded, down]
+        cpuPercent:
+          type: number
+        memoryPercent:
+          type: number
+        containers:
+          type: integer
+        uptime:
+          type: string
+      required: [id, region, status, cpuPercent, memoryPercent, containers, uptime]

@@ -1,0 +1,700 @@
+# Freeable Domains Platform - Complete Replit Agent Specification
+
+Build a production-ready full-stack platform called "Freeable Domains".
+
+The platform is a combination of:
+
+* Domain Registrar
+* Domain Registry
+* DNS Manager
+* GitHub Import Hosting Platform
+* Environment Variable Manager
+* Deployment Platform
+* Infrastructure Manager
+* Serverless Hosting Platform
+* Website Builder
+* Project Manager
+
+The platform should be inspired by:
+
+* Vercel
+* Netlify
+* Railway
+* Render
+* Cloudflare Pages
+* GitHub
+* Namecheap
+* Porkbun
+* Freenom (legacy concept only)
+* InfinityFree
+* Firebase Hosting
+
+The entire platform must be completely self-hosted and built using modern TypeScript technologies.
+
+---
+
+## CORE TECH STACK
+
+Frontend:
+
+* React
+* TypeScript
+* Vite
+* TailwindCSS
+* shadcn/ui
+* Zustand
+* TanStack Query
+
+Backend:
+
+* Node.js
+* Express
+* TypeScript
+
+Database:
+
+* PostgreSQL
+
+ORM:
+
+* Prisma
+
+Authentication:
+
+* JWT
+* Session support
+
+Infrastructure:
+
+* Docker
+* Reverse Proxy
+* Nginx
+* Dynamic Routing
+
+Storage:
+
+* S3-compatible storage
+
+Deployment:
+
+* GitHub Import
+* ZIP Upload
+* Manual Deployment
+
+---
+
+## NO SIGNUP REQUIRED MODE
+
+Users may use the platform without registration.
+
+Anonymous users receive:
+
+* temporary workspace
+* temporary deployment
+* temporary subdomain
+* temporary environment variables
+* temporary DNS records
+
+Optional accounts may exist later but are not required.
+
+No:
+
+* Credit card
+* Billing
+* Payment gateways
+* Subscription plans
+
+---
+
+## CUSTOM DOMAIN REGISTRY SYSTEM
+
+Create an internal registry system.
+
+Supported free namespaces:
+
+.live
+
+.qwerty
+
+.0.com
+
+.zapto.org
+
+.freeable
+
+.ai.net
+
+.bot.net
+
+.love
+
+.free.net
+
+IP Address Domains
+
+Examples:
+
+hello.live
+
+project.qwerty
+
+website.0.com
+
+chat.zapto.org
+
+awesome.freeable
+
+assistant.ai.net
+
+robot.bot.net
+
+dating.love
+
+mysite.free.net
+
+---
+
+## IP DOMAIN SYSTEM
+
+Special support for:
+
+123.456.789.0
+
+222.111.100.50
+
+100.100.100.100
+
+These should function as virtual domains.
+
+Examples:
+
+[https://123.456.789.0](https://123.456.789.0)
+
+https://222.111.100.50
+
+https://100.100.100.100
+
+Internally map them to routing records.
+
+Implement:
+
+* parser
+* validator
+* resolver
+* DNS lookup simulator
+
+---
+
+## DOMAIN REGISTRATION SYSTEM
+
+Features:
+
+Search domain
+
+Check availability
+
+Register domain
+
+Transfer domain
+
+Delete domain
+
+Renew domain
+
+Domain expiration
+
+Domain ownership
+
+WHOIS simulator
+
+Registry records
+
+Registrar records
+
+Domain history
+
+Audit logs
+
+---
+
+## DNS MANAGER
+
+Support:
+
+A
+
+AAAA
+
+CNAME
+
+TXT
+
+MX
+
+NS
+
+SRV
+
+CAA
+
+PTR
+
+ALIAS
+
+Custom Records
+
+Features:
+
+DNS propagation simulator
+
+DNS validation
+
+DNS history
+
+DNS rollback
+
+DNS import/export
+
+Zone file editor
+
+---
+
+## GITHUB IMPORT DEPLOYMENT
+
+User enters:
+
+GitHub URL
+
+Example:
+
+https://github.com/user/project
+
+Platform automatically:
+
+imports repository
+
+detects language
+
+detects framework
+
+detects package manager
+
+installs dependencies
+
+creates build pipeline
+
+deploys application
+
+Supported:
+
+Node.js
+
+React
+
+Vue
+
+Angular
+
+Next.js
+
+Nuxt
+
+Astro
+
+Svelte
+
+Express
+
+Fastify
+
+Python
+
+Flask
+
+FastAPI
+
+PHP
+
+Static Sites
+
+---
+
+## FRAMEWORK DETECTION
+
+Auto-detect:
+
+package.json
+
+requirements.txt
+
+composer.json
+
+Cargo.toml
+
+go.mod
+
+Dockerfile
+
+vite.config
+
+next.config
+
+astro.config
+
+nuxt.config
+
+---
+
+## ENVIRONMENT VARIABLE MANAGER
+
+Support:
+
+Create Variable
+
+Edit Variable
+
+Delete Variable
+
+Encrypted Variable
+
+Secret Variable
+
+Scoped Variable
+
+Build Variable
+
+Runtime Variable
+
+Examples:
+
+DATABASE_URL
+
+API_KEY
+
+JWT_SECRET
+
+OPENAI_KEY
+
+SMTP_HOST
+
+SMTP_USER
+
+SMTP_PASS
+
+---
+
+## DEPLOYMENT SYSTEM
+
+Features:
+
+Deploy
+
+Redeploy
+
+Rollback
+
+Preview Deployment
+
+Production Deployment
+
+Logs
+
+Metrics
+
+Status Monitoring
+
+Health Checks
+
+Deployment History
+
+---
+
+## INFRASTRUCTURE MANAGER
+
+Display:
+
+Servers
+
+Containers
+
+Domains
+
+Deployments
+
+Builds
+
+DNS
+
+Storage
+
+Bandwidth
+
+CPU
+
+RAM
+
+Disk Usage
+
+---
+
+## CUSTOM NAMESERVER SYSTEM
+
+Generate:
+
+ns1.freeable.local
+
+ns2.freeable.local
+
+ns3.freeable.local
+
+ns4.freeable.local
+
+Support:
+
+Zone Delegation
+
+DNS Routing
+
+Record Validation
+
+Nameserver Status
+
+---
+
+## BUILD PIPELINE
+
+Stages:
+
+Clone Repository
+
+Install Dependencies
+
+Run Tests
+
+Build Project
+
+Generate Artifacts
+
+Deploy
+
+Verify Health
+
+Publish
+
+---
+
+## PROJECT DASHBOARD
+
+Each project shows:
+
+Project Name
+
+Repository
+
+Branch
+
+Deployments
+
+Domains
+
+Environment Variables
+
+Logs
+
+Analytics
+
+Build Status
+
+DNS Status
+
+---
+
+## SECURITY SYSTEM
+
+Rate Limiting
+
+Bot Protection
+
+Abuse Detection
+
+Spam Detection
+
+Malware Detection
+
+Phishing Detection
+
+DNS Abuse Detection
+
+Sandbox Execution
+
+Permission System
+
+Audit Logs
+
+---
+
+## ANALYTICS
+
+Visitors
+
+Requests
+
+Bandwidth
+
+Deployments
+
+Build Times
+
+DNS Queries
+
+Error Rates
+
+Geographic Statistics
+
+---
+
+## API
+
+Create complete REST API:
+
+/api/projects
+
+/api/deployments
+
+/api/domains
+
+/api/dns
+
+/api/env
+
+/api/builds
+
+/api/logs
+
+/api/analytics
+
+/api/users
+
+/api/github
+
+---
+
+## UI DESIGN
+
+Modern dark theme
+
+Cloud dashboard appearance
+
+Responsive
+
+Desktop
+
+Tablet
+
+Mobile
+
+Professional hosting-provider design
+
+---
+
+## EXAMPLE USER FLOW
+
+1. User visits homepage
+
+2. User searches:
+
+mywebsite.live
+
+3. Domain available
+
+4. User registers
+
+5. User imports:
+
+GitHub repository
+
+6. Platform detects React
+
+7. Platform builds project
+
+8. Platform deploys project
+
+9. Site becomes available:
+
+https://mywebsite.live
+
+10. User manages:
+
+DNS
+
+Environment Variables
+
+Deployments
+
+Analytics
+
+Logs
+
+---
+
+## BONUS FEATURES
+
+One-click deploy
+
+GitHub webhook integration
+
+Automatic rebuilds
+
+Custom SSL simulator
+
+Automatic HTTPS
+
+Project cloning
+
+Template marketplace
+
+Static hosting
+
+Serverless functions
+
+Cron jobs
+
+Webhook manager
+
+Backup manager
+
+Restore manager
+
+Project export
+
+Project import
+
+Multi-region deployment simulation
+
+Global edge routing simulation
+
+CDN simulation
+
+Status page
+
+Public API
+
+Admin panel
+
+Registry control panel
+
+Registrar control panel
+
+DNS operations center
+
+Infrastructure operations center
+
+---
+
+## FINAL GOAL
+
+Create a complete open-source platform that feels like a combination of:
+
+GitHub + Vercel + Netlify + Railway + Cloudflare + Namecheap + Registry Operator
+
+with free custom domains, GitHub import-to-deploy workflows, DNS management, environment variable management, deployment infrastructure, registry simulation, registrar simulation, and hosting management all inside one unified web application.
