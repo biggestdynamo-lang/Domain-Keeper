@@ -74,7 +74,7 @@ export const GetAnalyticsSummaryResponse = zod.object({
   "totalRequests": zod.number(),
   "totalBandwidthGb": zod.number(),
   "uniqueVisitors": zod.number(),
-  "avgBuildTimeSeconds": zod.number(),
+  "avgBuildTimeSeconds": zod.number().nullable(),
   "errorRate": zod.number(),
   "timeSeries": zod.array(zod.object({
   "date": zod.string(),
@@ -696,20 +696,22 @@ export const GetInfrastructureStatusResponse = zod.object({
   "id": zod.string(),
   "region": zod.string(),
   "status": zod.enum(['healthy', 'degraded', 'down']),
-  "cpuPercent": zod.number(),
-  "memoryPercent": zod.number(),
+  "cpuPercent": zod.number().nullable(),
+  "memoryPercent": zod.number().nullable(),
   "containers": zod.number(),
-  "uptime": zod.string()
+  "uptime": zod.string().nullable()
 })),
   "totalContainers": zod.number(),
   "runningContainers": zod.number(),
   "totalDomains": zod.number(),
   "totalDeployments": zod.number(),
-  "storageUsedGb": zod.number(),
-  "storageTotalGb": zod.number(),
+  "totalProjects": zod.number(),
+  "totalRequests": zod.number(),
+  "storageUsedGb": zod.number().nullable(),
+  "storageTotalGb": zod.number().nullable(),
   "bandwidthUsedGb": zod.number(),
-  "cpuUsagePercent": zod.number(),
-  "memoryUsagePercent": zod.number()
+  "cpuUsagePercent": zod.number().nullable(),
+  "memoryUsagePercent": zod.number().nullable()
 })
 
 

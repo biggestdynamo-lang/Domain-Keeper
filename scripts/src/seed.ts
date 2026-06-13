@@ -57,6 +57,7 @@ async function seed() {
   console.log("Projects seeded:", p1.id, p2.id, p3.id);
 
   // Deployments
+  const dep1CreatedAt = new Date(Date.now() - 25 * 1000);
   const [dep1] = await db.insert(deploymentsTable).values({
     projectId: p1.id,
     status: "ready",
@@ -67,9 +68,11 @@ async function seed() {
     buildDurationSeconds: 24.5,
     triggeredBy: "git push",
     isProduction: true,
-    completedAt: new Date(),
+    createdAt: dep1CreatedAt,
+    completedAt: new Date(dep1CreatedAt.getTime() + 24500),
   }).returning();
 
+  const dep2CreatedAt = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 - 19000);
   await db.insert(deploymentsTable).values({
     projectId: p1.id,
     status: "ready",
@@ -80,9 +83,11 @@ async function seed() {
     buildDurationSeconds: 18.2,
     triggeredBy: "manual",
     isProduction: true,
-    completedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+    createdAt: dep2CreatedAt,
+    completedAt: new Date(dep2CreatedAt.getTime() + 18200),
   });
 
+  const dep3CreatedAt = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000 - 32000);
   await db.insert(deploymentsTable).values({
     projectId: p2.id,
     status: "ready",
@@ -93,9 +98,11 @@ async function seed() {
     buildDurationSeconds: 31.0,
     triggeredBy: "api",
     isProduction: true,
-    completedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+    createdAt: dep3CreatedAt,
+    completedAt: new Date(dep3CreatedAt.getTime() + 31000),
   });
 
+  const dep4CreatedAt = new Date(Date.now() - 3 * 60 * 60 * 1000 - 9000);
   const [dep3] = await db.insert(deploymentsTable).values({
     projectId: p3.id,
     status: "failed",
@@ -104,7 +111,8 @@ async function seed() {
     branch: "main",
     triggeredBy: "git push",
     isProduction: true,
-    completedAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
+    createdAt: dep4CreatedAt,
+    completedAt: new Date(dep4CreatedAt.getTime() + 9000),
   }).returning();
 
   // Domains

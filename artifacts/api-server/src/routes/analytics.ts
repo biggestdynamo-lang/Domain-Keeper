@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, projectsTable, deploymentsTable, domainsTable, metricsTable } from "@workspace/db";
-import { eq, desc, count, avg, gte, and, sql } from "drizzle-orm";
+import { eq, desc, count, gte, and, sql } from "drizzle-orm";
 import { GetAnalyticsSummaryQueryParams } from "@workspace/api-zod";
 
 const router = Router();
@@ -42,11 +42,6 @@ router.get("/dashboard/summary", async (req, res) => {
   const successRate = completed.length > 0
     ? completed.filter(d => d.status === "ready").length / completed.length
     : 1;
-
-  const [todayMetrics] = await db
-    .select({ requestCount: metricsTable.requestCount })
-    .from(metricsTable)
-    .where(eq(metricsTable.date, new Date().toISOString().split("T")[0]));
 
   const [totalMetrics] = await db
     .select({ total: sql<number>`COALESCE(SUM(request_count), 0)` })
@@ -112,15 +107,21 @@ router.get("/analytics/summary", async (req, res) => {
     };
   });
 
+  // Compute avg build time from actual timestamp deltas (completedAt - createdAt)
+  // Only include rows where completed_at > created_at (guards against malformed seed data)
   const [buildStats] = await db
     .select({
-      avgBuildTime: avg(deploymentsTable.buildDurationSeconds),
+      avgBuildTime: sql<number | null>`
+        AVG(EXTRACT(EPOCH FROM (completed_at - created_at)))
+      `,
     })
     .from(deploymentsTable)
     .where(
       and(
         eq(deploymentsTable.status, "ready"),
         gte(deploymentsTable.createdAt, since),
+        sql`completed_at IS NOT NULL`,
+        sql`completed_at > created_at`,
       )
     );
 
@@ -153,9 +154,11 @@ router.get("/analytics/summary", async (req, res) => {
     .limit(5);
 
   const totalRequests = timeSeries.reduce((s, p) => s + p.requests, 0);
-  const reqPerDeployment = topProjectsRaw.reduce((s, p) => s + Number(p.deploymentCount), 0);
+  const totalDeploymentsInPeriod = topProjectsRaw.reduce((s, p) => s + Number(p.deploymentCount), 0);
   const topProjects = topProjectsRaw.map(p => {
-    const share = reqPerDeployment > 0 ? Number(p.deploymentCount) / reqPerDeployment : 1 / (topProjectsRaw.length || 1);
+    const share = totalDeploymentsInPeriod > 0
+      ? Number(p.deploymentCount) / totalDeploymentsInPeriod
+      : 1 / (topProjectsRaw.length || 1);
     const projectRequests = Math.round(totalRequests * share);
     return {
       projectId: p.projectId,
@@ -165,14 +168,14 @@ router.get("/analytics/summary", async (req, res) => {
     };
   });
 
+  const rawAvg = buildStats?.avgBuildTime != null ? Number(buildStats.avgBuildTime) : null;
+
   res.json({
     period: period ?? "30d",
     totalRequests,
     totalBandwidthGb: parseFloat(timeSeries.reduce((s, p) => s + p.bandwidthGb, 0).toFixed(2)),
     uniqueVisitors: Math.round(totalRequests * 0.4),
-    avgBuildTimeSeconds: buildStats?.avgBuildTime != null
-      ? parseFloat(Number(buildStats.avgBuildTime).toFixed(1))
-      : null,
+    avgBuildTimeSeconds: rawAvg != null ? parseFloat(rawAvg.toFixed(1)) : null,
     errorRate,
     timeSeries,
     topProjects,
@@ -185,12 +188,13 @@ router.get("/infrastructure/status", async (req, res) => {
   const [domainCount] = await db.select({ count: count() }).from(domainsTable);
   const [deploymentCount] = await db.select({ count: count() }).from(deploymentsTable);
 
-  const activeDeploymentCount = await db
+  // Independent counts — no subtraction that can go negative
+  const [runningRow] = await db
     .select({ count: count() })
     .from(deploymentsTable)
     .where(sql`status IN ('queued', 'cloning', 'installing', 'building', 'deploying')`);
 
-  const readyDeploymentCount = await db
+  const [readyRow] = await db
     .select({ count: count() })
     .from(deploymentsTable)
     .where(eq(deploymentsTable.status, "ready"));
@@ -199,12 +203,13 @@ router.get("/infrastructure/status", async (req, res) => {
     .select({ total: sql<number>`COALESCE(SUM(request_count), 0)` })
     .from(metricsTable);
 
-  const totalRequests = Number(totalMetrics?.total ?? 0);
   const totalProjects = Number(projectCount?.count ?? 0);
   const totalDomains = Number(domainCount?.count ?? 0);
   const totalDeployments = Number(deploymentCount?.count ?? 0);
-  const activeDeployments = Number(activeDeploymentCount[0]?.count ?? 0);
-  const readyDeployments = Number(readyDeploymentCount[0]?.count ?? 0);
+  const runningContainers = Number(runningRow?.count ?? 0);
+  const readyContainers = Number(readyRow?.count ?? 0);
+  const totalContainers = readyContainers + runningContainers;
+  const totalRequests = Number(totalMetrics?.total ?? 0);
 
   const regions = ["us-east-1", "us-west-2", "eu-west-1", "ap-northeast-1", "ap-southeast-1"];
   const servers = regions.map((region, i) => ({
@@ -213,14 +218,14 @@ router.get("/infrastructure/status", async (req, res) => {
     status: "healthy" as const,
     cpuPercent: null,
     memoryPercent: null,
-    containers: Math.floor(readyDeployments / regions.length) + (i < readyDeployments % regions.length ? 1 : 0),
+    containers: Math.floor(readyContainers / regions.length) + (i < readyContainers % regions.length ? 1 : 0),
     uptime: null,
   }));
 
   res.json({
     servers,
-    totalContainers: readyDeployments,
-    runningContainers: readyDeployments - activeDeployments,
+    totalContainers,
+    runningContainers,
     totalDomains,
     totalDeployments,
     totalProjects,

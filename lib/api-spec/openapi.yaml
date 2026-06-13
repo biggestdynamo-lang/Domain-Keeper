@@ -869,7 +869,7 @@ components:
         uniqueVisitors:
           type: integer
         avgBuildTimeSeconds:
-          type: number
+          type: ["number", "null"]
         errorRate:
           type: number
         timeSeries:
@@ -1364,22 +1364,28 @@ components:
           type: integer
         totalDeployments:
           type: integer
+        totalProjects:
+          type: integer
+        totalRequests:
+          type: integer
         storageUsedGb:
-          type: number
+          type: ["number", "null"]
         storageTotalGb:
-          type: number
+          type: ["number", "null"]
         bandwidthUsedGb:
           type: number
         cpuUsagePercent:
-          type: number
+          type: ["number", "null"]
         memoryUsagePercent:
-          type: number
+          type: ["number", "null"]
       required:
         - servers
         - totalContainers
         - runningContainers
         - totalDomains
         - totalDeployments
+        - totalProjects
+        - totalRequests
         - storageUsedGb
         - storageTotalGb
         - bandwidthUsedGb
@@ -1397,13 +1403,13 @@ components:
           type: string
           enum: [healthy, degraded, down]
         cpuPercent:
-          type: number
+          type: ["number", "null"]
         memoryPercent:
-          type: number
+          type: ["number", "null"]
         containers:
           type: integer
         uptime:
-          type: string
+          type: ["string", "null"]
       required: [id, region, status, cpuPercent, memoryPercent, containers, uptime]
 
     # ── Activity Feed ────────────────────────────────────────────────────────

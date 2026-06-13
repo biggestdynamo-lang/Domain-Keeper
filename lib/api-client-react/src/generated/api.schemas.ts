@@ -123,7 +123,8 @@ export interface AnalyticsSummary {
   totalRequests: number;
   totalBandwidthGb: number;
   uniqueVisitors: number;
-  avgBuildTimeSeconds: number;
+  /** @nullable */
+  avgBuildTimeSeconds: number | null;
   errorRate: number;
   timeSeries: TimeSeriesPoint[];
   topProjects: ProjectMetric[];
@@ -405,10 +406,13 @@ export interface ServerStatus {
   id: string;
   region: string;
   status: ServerStatusStatus;
-  cpuPercent: number;
-  memoryPercent: number;
+  /** @nullable */
+  cpuPercent: number | null;
+  /** @nullable */
+  memoryPercent: number | null;
   containers: number;
-  uptime: string;
+  /** @nullable */
+  uptime: string | null;
 }
 
 export interface InfrastructureStatus {
@@ -417,11 +421,17 @@ export interface InfrastructureStatus {
   runningContainers: number;
   totalDomains: number;
   totalDeployments: number;
-  storageUsedGb: number;
-  storageTotalGb: number;
+  totalProjects: number;
+  totalRequests: number;
+  /** @nullable */
+  storageUsedGb: number | null;
+  /** @nullable */
+  storageTotalGb: number | null;
   bandwidthUsedGb: number;
-  cpuUsagePercent: number;
-  memoryUsagePercent: number;
+  /** @nullable */
+  cpuUsagePercent: number | null;
+  /** @nullable */
+  memoryUsagePercent: number | null;
 }
 
 export type ActivityEventType = typeof ActivityEventType[keyof typeof ActivityEventType];

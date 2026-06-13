@@ -33,15 +33,19 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-async function incrementRequestCount(_req: Request, _res: Response, next: NextFunction) {
-  const today = new Date().toISOString().split("T")[0];
-  db.execute(
-    sql`INSERT INTO metrics (date, request_count, updated_at)
-        VALUES (${today}, 1, NOW())
-        ON CONFLICT (date) DO UPDATE
-        SET request_count = metrics.request_count + 1,
-            updated_at = NOW()`
-  ).catch(() => {});
+async function incrementRequestCount(req: Request, _res: Response, next: NextFunction) {
+  if (!req.path.startsWith("/internal")) {
+    const today = new Date().toISOString().split("T")[0];
+    db.execute(
+      sql`INSERT INTO metrics (date, request_count, updated_at)
+          VALUES (${today}, 1, NOW())
+          ON CONFLICT (date) DO UPDATE
+          SET request_count = metrics.request_count + 1,
+              updated_at = NOW()`
+    ).catch((err) => {
+      logger.warn({ err }, "Failed to increment request count");
+    });
+  }
   next();
 }
 
