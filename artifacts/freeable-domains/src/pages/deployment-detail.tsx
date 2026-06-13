@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow, format } from "date-fns";
-import { CheckCircle2, XCircle, Clock, ArrowLeft, RotateCcw, ExternalLink, GitCommit, Zap } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, ArrowLeft, RotateCcw, GitCommit, Zap } from "lucide-react";
+import { SimulatedVisitButton } from "@/components/simulated-visit";
 
 const STAGES = ["clone", "install", "build", "deploy", "verify"] as const;
 const TERMINAL = ["ready", "failed", "cancelled", "rolled_back"];
@@ -190,15 +191,12 @@ export default function DeploymentDetailPage() {
           </div>
           <div className="flex gap-2">
             {deployment.url && (
-              <a href={deployment.url} target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" size="sm" className="gap-1.5" data-testid="button-visit-deployment">
-                  <ExternalLink className="w-3.5 h-3.5" />Visit
-                </Button>
-              </a>
+              <SimulatedVisitButton url={deployment.url} variant="outline" size="sm" className="gap-1.5" testId="button-visit-deployment" />
             )}
             {deployment.status === "ready" && (
               <Button variant="ghost" size="sm" className="gap-1.5" onClick={handleRollback} disabled={rollback.isPending} data-testid="button-rollback">
-                <RotateCcw className="w-3.5 h-3.5" />Rollback
+                <RotateCcw className={`w-3.5 h-3.5 ${rollback.isPending ? "animate-spin" : ""}`} />
+                {rollback.isPending ? "Rolling back…" : "Rollback"}
               </Button>
             )}
           </div>

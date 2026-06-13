@@ -4,7 +4,7 @@ import {
   useGetProject, useGetProjectSummary, useListDeployments, useListDomains,
   useListEnvVars, useCreateDeployment, useCreateEnvVar, useDeleteEnvVar,
   useUpdateProject, useGetProjectWebhook, useTriggerGithubWebhook,
-  useAttachDomainToProject, useDetachDomainFromProject,
+  useAttachDomainToProject, useDetachDomainFromProject, useRollbackDeployment,
   getListDeploymentsQueryKey, getListEnvVarsQueryKey, getListDomainsQueryKey,
   getGetProjectQueryKey, getGetProjectSummaryQueryKey, getGetProjectWebhookQueryKey
 } from "@workspace/api-client-react";
@@ -19,7 +19,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
-import { Zap, Globe, KeyRound, Activity, Settings, GitBranch, ExternalLink, Plus, Trash2, Eye, EyeOff, BarChart, Copy, Check, Webhook, GitCommit, RefreshCw, ChevronDown, Shield, Unlink } from "lucide-react";
+import { Zap, Globe, KeyRound, Activity, Settings, GitBranch, ExternalLink, Plus, Trash2, Eye, EyeOff, BarChart, Copy, Check, Webhook, GitCommit, RefreshCw, ChevronDown, Shield, Unlink, RotateCcw } from "lucide-react";
+import { SimulatedVisitButton } from "@/components/simulated-visit";
 
 function statusDot(status: string) {
   switch (status) {
@@ -173,6 +174,23 @@ export default function ProjectDetailPage() {
   const [revealedVars, setRevealedVars] = useState<Set<number>>(new Set());
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [selectedDomainId, setSelectedDomainId] = useState<string>("");
+  const [rollingBackId, setRollingBackId] = useState<number | null>(null);
+
+  const rollbackDeployment = useRollbackDeployment();
+
+  const handleRollback = (deploymentId: number) => {
+    setRollingBackId(deploymentId);
+    rollbackDeployment.mutate({ id: deploymentId }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListDeploymentsQueryKey(projectId) });
+        queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
+        queryClient.invalidateQueries({ queryKey: getGetProjectSummaryQueryKey(projectId) });
+        toast({ title: "Rollback triggered", description: "A new deployment is building from that commit." });
+      },
+      onError: () => toast({ title: "Rollback failed", variant: "destructive" }),
+      onSettled: () => setRollingBackId(null),
+    });
+  };
 
   if (projectLoading) {
     return (
@@ -253,9 +271,14 @@ export default function ProjectDetailPage() {
                 </a>
               )}
               {project.deploymentUrl && (
-                <a href={project.deploymentUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-primary hover:underline">
-                  <ExternalLink className="w-3 h-3" />{project.deploymentUrl}
-                </a>
+                <SimulatedVisitButton
+                  url={project.deploymentUrl}
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto p-0 text-xs text-primary hover:text-primary/80 font-normal gap-1"
+                  label={project.deploymentUrl}
+                  testId="button-visit-project-url"
+                />
               )}
             </div>
           </div>
@@ -323,11 +346,24 @@ export default function ProjectDetailPage() {
                     {d.buildDurationSeconds && ` · ${d.buildDurationSeconds.toFixed(0)}s`}
                   </p>
                 </div>
-                {d.url && (
-                  <a href={d.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1 flex-shrink-0 ml-3" onClick={e => e.stopPropagation()}>
-                    <ExternalLink className="w-3 h-3" />Visit
-                  </a>
-                )}
+                <div className="flex items-center gap-1 flex-shrink-0 ml-3" onClick={e => e.stopPropagation()}>
+                  {d.url && (
+                    <SimulatedVisitButton url={d.url} variant="ghost" size="sm" className="text-xs h-7 px-2" testId={`button-visit-${d.id}`} />
+                  )}
+                  {d.status === "ready" && deployments && deployments[0]?.id !== d.id && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                      onClick={e => { e.stopPropagation(); handleRollback(d.id); }}
+                      disabled={rollingBackId === d.id}
+                      data-testid={`button-rollback-${d.id}`}
+                    >
+                      <RotateCcw className={`w-3 h-3 ${rollingBackId === d.id ? "animate-spin" : ""}`} />
+                      {rollingBackId === d.id ? "Rolling back…" : "Rollback"}
+                    </Button>
+                  )}
+                </div>
               </div>
             ))
           )}

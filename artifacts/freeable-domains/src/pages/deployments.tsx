@@ -3,7 +3,8 @@ import { useListProjects, useListDeployments, getListDeploymentsQueryKey } from 
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
-import { Activity, GitCommit, Clock, ExternalLink } from "lucide-react";
+import { Activity, GitCommit, Clock } from "lucide-react";
+import { SimulatedVisitButton } from "@/components/simulated-visit";
 
 function statusBadge(status: string) {
   switch (status) {
@@ -74,9 +75,7 @@ function ProjectDeployments({ projectId, projectName }: { projectId: number; pro
               </div>
             </div>
             {d.url && (
-              <a href={d.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
-                <ExternalLink className="w-3 h-3" />Visit
-              </a>
+              <SimulatedVisitButton url={d.url} variant="ghost" size="sm" className="text-xs h-7 px-2" testId={`button-visit-global-${d.id}`} />
             )}
           </div>
         ))}
