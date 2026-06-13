@@ -45,7 +45,7 @@ async function buildFunction() {
     ],
     sourcemap: false,
     plugins: [
-      esbuildPluginPino({ transports: ["pino-pretty"] }),
+      esbuildPluginPino({ transports: [] }),
     ],
   });
 }
