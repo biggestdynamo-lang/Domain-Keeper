@@ -13,7 +13,7 @@ import {
 
 const router = Router();
 
-const FREE_TLDS = [".live", ".qwerty", ".0.com", ".zapto.org", ".freeable", ".ai.net", ".bot.net", ".love", ".free.net"];
+const FREE_TLDS = [".live", ".qwerty", ".0.com", ".zapto.org", ".freeable", ".ai.net", ".bot.net", ".love", ".free.net", ".ver"];
 
 // Search domain availability
 router.get("/domains/search", async (req, res) => {

@@ -136,7 +136,7 @@ export default function DomainSearchPage() {
           <Globe className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
           <p className="text-sm text-muted-foreground">Enter a name above to check availability across all free TLDs.</p>
           <div className="flex flex-wrap gap-2 justify-center mt-4">
-            {[".live", ".freeable", ".qwerty", ".ai.net", ".love", ".bot.net", ".zapto.org", ".0.com", ".free.net"].map(tld => (
+            {[".live", ".freeable", ".qwerty", ".ai.net", ".love", ".bot.net", ".zapto.org", ".0.com", ".free.net", ".ver"].map(tld => (
               <span key={tld} className="text-xs px-2.5 py-1 rounded-full border border-border text-muted-foreground">{tld}</span>
             ))}
           </div>
