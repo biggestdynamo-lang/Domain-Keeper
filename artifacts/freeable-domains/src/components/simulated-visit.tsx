@@ -3,6 +3,21 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ExternalLink, Copy, Check, Zap, Lock, RefreshCw } from "lucide-react";
 
+// Legacy fake deployment domains that don't resolve in DNS —
+// new deployments use the app's own real domain instead.
+function isLegacyFakeUrl(url: string) {
+  return url.includes(".freeable.live") ||
+    url.includes(".freeable") ||
+    url.includes(".bot.net") ||
+    url.includes(".zapto.org") ||
+    url.includes(".ai.net") ||
+    url.includes(".love") ||
+    url.includes(".free.net") ||
+    url.includes(".0.com") ||
+    url.includes(".qwerty") ||
+    url.includes(".live") && !url.includes(window.location.hostname);
+}
+
 interface SimulatedVisitButtonProps {
   url: string;
   size?: "sm" | "default";
@@ -16,11 +31,26 @@ export function SimulatedVisitButton({ url, size = "sm", variant = "ghost", clas
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  const isReal = !isLegacyFakeUrl(url);
+  const fullUrl = url.startsWith("/") ? `${window.location.origin}${url}` : url;
+
   const copy = () => {
-    navigator.clipboard.writeText(url);
+    navigator.clipboard.writeText(fullUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  // Real URL (new-style /preview/deployment-N on our own domain) — open directly
+  if (isReal) {
+    return (
+      <a href={fullUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}>
+        <Button variant={variant} size={size} className={`gap-1.5 ${className}`} data-testid={testId}>
+          <ExternalLink className="w-3.5 h-3.5" />
+          {label}
+        </Button>
+      </a>
+    );
+  }
 
   return (
     <>

@@ -231,7 +231,12 @@ async function simulateBuild(deploymentId: number, projectId: number) {
   }
 
   const duration = 15 + Math.random() * 30;
-  const url = `https://deployment-${deploymentId}.freeable.live`;
+  // Use the app's own real domain so deployment URLs resolve in DNS
+  // (same wildcard-DNS pattern real platforms use: *.vercel.app → their load balancer)
+  const appDomain = (process.env.REPLIT_DOMAINS?.split(",")[0] ?? process.env.REPLIT_DEV_DOMAIN ?? "").trim();
+  const url = appDomain
+    ? `https://${appDomain}/preview/deployment/${deploymentId}`
+    : `/preview/deployment/${deploymentId}`;
   await db.update(deploymentsTable).set({
     status: "ready",
     url,

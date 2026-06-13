@@ -17,6 +17,7 @@ import DomainDetailPage from "@/pages/domain-detail";
 import InfrastructurePage from "@/pages/infrastructure";
 import AnalyticsPage from "@/pages/analytics";
 import SettingsPage from "@/pages/settings";
+import DeploymentPreviewPage from "@/pages/deployment-preview";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -66,6 +67,9 @@ function Router() {
       </Route>
       <Route path="/settings">
         <Layout><SettingsPage /></Layout>
+      </Route>
+      <Route path="/preview/deployment/:id">
+        <DeploymentPreviewPage />
       </Route>
       <Route>
         <Layout><NotFound /></Layout>
