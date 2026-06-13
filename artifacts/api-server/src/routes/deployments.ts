@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, deploymentsTable, projectsTable, logEntriesTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, gt, and } from "drizzle-orm";
 import {
   CreateDeploymentParams,
   CreateDeploymentBody,
@@ -117,6 +117,90 @@ router.get("/deployments/:id/logs", async (req, res) => {
     .where(eq(logEntriesTable.deploymentId, id))
     .orderBy(logEntriesTable.timestamp);
   res.json(logs);
+});
+
+// Stream deployment logs via SSE
+router.get("/deployments/:id/logs/stream", async (req, res) => {
+  const { id } = GetDeploymentLogsParams.parse({ id: Number(req.params.id) });
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders();
+
+  const TERMINAL = ["ready", "failed", "cancelled", "rolled_back"];
+
+  function send(event: string, data: unknown) {
+    res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+  }
+
+  // Send all existing logs immediately
+  const existingLogs = await db
+    .select()
+    .from(logEntriesTable)
+    .where(eq(logEntriesTable.deploymentId, id))
+    .orderBy(logEntriesTable.timestamp);
+
+  let lastLogId = 0;
+  for (const log of existingLogs) {
+    send("log", log);
+    lastLogId = Math.max(lastLogId, log.id);
+  }
+
+  // If deployment already finished, send final status and close
+  const [dep] = await db
+    .select({ status: deploymentsTable.status, url: deploymentsTable.url })
+    .from(deploymentsTable)
+    .where(eq(deploymentsTable.id, id));
+
+  if (!dep) { res.end(); return; }
+
+  if (TERMINAL.includes(dep.status)) {
+    send("status", { status: dep.status, url: dep.url });
+    send("done", {});
+    res.end();
+    return;
+  }
+
+  let lastStatus = dep.status;
+
+  // Poll DB for new logs and status changes
+  const interval = setInterval(async () => {
+    try {
+      const newLogs = await db
+        .select()
+        .from(logEntriesTable)
+        .where(and(eq(logEntriesTable.deploymentId, id), gt(logEntriesTable.id, lastLogId)))
+        .orderBy(logEntriesTable.timestamp);
+
+      for (const log of newLogs) {
+        send("log", log);
+        lastLogId = Math.max(lastLogId, log.id);
+      }
+
+      const [current] = await db
+        .select({ status: deploymentsTable.status, url: deploymentsTable.url })
+        .from(deploymentsTable)
+        .where(eq(deploymentsTable.id, id));
+
+      if (current && current.status !== lastStatus) {
+        lastStatus = current.status;
+        send("status", { status: current.status, url: current.url });
+
+        if (TERMINAL.includes(current.status)) {
+          send("done", {});
+          clearInterval(interval);
+          res.end();
+        }
+      }
+    } catch {
+      clearInterval(interval);
+      res.end();
+    }
+  }, 300);
+
+  req.on("close", () => clearInterval(interval));
 });
 
 // Simulate build pipeline asynchronously
