@@ -1,0 +1,15 @@
+[build]
+  command = "npm install -g pnpm && pnpm install && pnpm run typecheck:libs && pnpm --filter @workspace/api-server run build:netlify"
+  publish = "artifacts/freeable-domains/dist/public"
+  functions = "netlify/dist/functions"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

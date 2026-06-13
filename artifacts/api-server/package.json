@@ -7,6 +7,7 @@
     "dev": "export NODE_ENV=development && pnpm run build && pnpm run start",
     "build": "node ./build.mjs",
     "build:production": "BASE_PATH=/ NODE_ENV=production pnpm --filter @workspace/freeable-domains run build && NODE_ENV=production node ./build.mjs",
+    "build:netlify": "BASE_PATH=/ NODE_ENV=production pnpm --filter @workspace/freeable-domains run build && NODE_ENV=production node ./build-netlify.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
