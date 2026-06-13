@@ -148,7 +148,7 @@ export default function DashboardPage() {
         {[
           { label: "Deployments today", value: data?.deploymentsToday ?? 0, suffix: "deploys", icon: Zap },
           { label: "Success rate", value: data ? `${(data.successRate * 100).toFixed(1)}%` : "—", icon: TrendingUp },
-          { label: "Total bandwidth", value: data ? `${data.totalBandwidthGb.toFixed(1)} GB` : "—", icon: Activity },
+          { label: "Total bandwidth", value: data?.totalBandwidthGb != null ? `${data.totalBandwidthGb.toFixed(1)} GB` : "—", icon: Activity },
         ].map(item => (
           <div key={item.label} className="bg-card border border-border rounded-lg px-5 py-4 flex items-center gap-4">
             <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
