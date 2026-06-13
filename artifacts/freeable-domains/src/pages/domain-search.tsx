@@ -41,8 +41,9 @@ export default function DomainSearchPage() {
     );
   }
 
-  const available = results?.filter(r => r.available) ?? [];
-  const taken = results?.filter(r => !r.available) ?? [];
+  const resultsArr = Array.isArray(results) ? results : [];
+  const available = resultsArr.filter(r => r.available);
+  const taken = resultsArr.filter(r => !r.available);
 
   return (
     <div className="space-y-6">
@@ -71,7 +72,7 @@ export default function DomainSearchPage() {
         </div>
       )}
 
-      {results && results.length > 0 && (
+      {resultsArr.length > 0 && (
         <div className="space-y-6">
           {available.length > 0 && (
             <div>
