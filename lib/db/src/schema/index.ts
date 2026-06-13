@@ -5,3 +5,4 @@ export * from "./dns-records";
 export * from "./env-vars";
 export * from "./log-entries";
 export * from "./webhook-events";
+export * from "./activity-events";

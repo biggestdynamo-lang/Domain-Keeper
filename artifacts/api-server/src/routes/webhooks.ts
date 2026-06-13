@@ -3,6 +3,7 @@ import { db, projectsTable, webhookEventsTable, deploymentsTable, logEntriesTabl
 import { eq, desc } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { GetProjectWebhookParams, TriggerGithubWebhookParams } from "@workspace/api-zod";
+import { logActivity } from "../lib/activity";
 
 const router = Router();
 
@@ -71,6 +72,20 @@ router.post("/webhooks/github/:token", async (req, res) => {
     .insert(webhookEventsTable)
     .values({ projectId: project.id, ref, commitSha, commitMessage, pusher, deploymentId: deployment.id })
     .returning();
+
+  logActivity({
+    projectId: project.id,
+    type: "webhook_received",
+    title: `GitHub push received from ${pusher}`,
+    detail: commitMessage,
+    metadata: {
+      ref,
+      commitSha: commitSha.slice(0, 7),
+      pusher,
+      deploymentId: deployment.id,
+      webhookEventId: event.id,
+    },
+  });
 
   simulateBuild(deployment.id, project.id);
 

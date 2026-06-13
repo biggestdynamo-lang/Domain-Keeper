@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { db, deploymentsTable, projectsTable, logEntriesTable } from "@workspace/db";
 import { eq, desc, gt, and } from "drizzle-orm";
+import { logActivity } from "../lib/activity";
 import {
   CreateDeploymentParams,
   CreateDeploymentBody,
@@ -54,6 +55,14 @@ router.post("/projects/:id/deployments", async (req, res) => {
     status: "queued",
   }).returning();
 
+  logActivity({
+    projectId: id,
+    type: "deployment_triggered",
+    title: "Deployment triggered manually",
+    detail: `Branch: ${deployment.branch}`,
+    metadata: { deploymentId: deployment.id, triggeredBy: "manual" },
+  });
+
   // Simulate async build pipeline
   simulateBuild(deployment.id, id);
 
@@ -102,6 +111,14 @@ router.post("/deployments/:id/rollback", async (req, res) => {
     isProduction: true,
     status: "queued",
   }).returning();
+
+  logActivity({
+    projectId: orig.projectId,
+    type: "deployment_triggered",
+    title: `Rollback to deployment #${id}`,
+    detail: orig.commitSha ? `Commit: ${orig.commitSha.slice(0, 7)}` : undefined,
+    metadata: { deploymentId: newDep.id, rolledBackFrom: id, triggeredBy: "rollback" },
+  });
 
   simulateBuild(newDep.id, orig.projectId);
 
@@ -245,6 +262,14 @@ async function simulateBuild(deploymentId: number, projectId: number) {
   }).where(eq(deploymentsTable.id, deploymentId));
 
   await db.update(projectsTable).set({ status: "active", deploymentUrl: url }).where(eq(projectsTable.id, projectId));
+
+  logActivity({
+    projectId,
+    type: "deployment_ready",
+    title: "Deployment ready",
+    detail: `Built in ${duration.toFixed(0)}s · ${url}`,
+    metadata: { deploymentId, url, buildDurationSeconds: duration },
+  });
 }
 
 function sleep(ms: number) {

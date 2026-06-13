@@ -8,6 +8,7 @@ import envRouter from "./env";
 import githubRouter from "./github";
 import analyticsRouter from "./analytics";
 import webhooksRouter from "./webhooks";
+import activityRouter from "./activity";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(envRouter);
 router.use(githubRouter);
 router.use(analyticsRouter);
 router.use(webhooksRouter);
+router.use(activityRouter);
 
 export default router;

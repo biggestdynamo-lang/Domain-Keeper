@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ActivityEvent,
   AnalyticsSummary,
   DashboardSummary,
   Deployment,
@@ -734,6 +735,83 @@ export function useGetProjectSummary<TData = Awaited<ReturnType<typeof getProjec
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetProjectSummaryQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetProjectActivityUrl = (id: number,) => {
+
+
+
+
+  return `/api/projects/${id}/activity`
+}
+
+/**
+ * @summary Get chronological activity feed for a project
+ */
+export const getProjectActivity = async (id: number, options?: RequestInit): Promise<ActivityEvent[]> => {
+
+  return customFetch<ActivityEvent[]>(getGetProjectActivityUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProjectActivityQueryKey = (id: number,) => {
+    return [
+    `/api/projects/${id}/activity`
+    ] as const;
+    }
+
+
+export const getGetProjectActivityQueryOptions = <TData = Awaited<ReturnType<typeof getProjectActivity>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProjectActivity>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProjectActivityQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProjectActivity>>> = ({ signal }) => getProjectActivity(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProjectActivity>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetProjectActivityQueryResult = NonNullable<Awaited<ReturnType<typeof getProjectActivity>>>
+export type GetProjectActivityQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get chronological activity feed for a project
+ */
+
+export function useGetProjectActivity<TData = Awaited<ReturnType<typeof getProjectActivity>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProjectActivity>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetProjectActivityQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

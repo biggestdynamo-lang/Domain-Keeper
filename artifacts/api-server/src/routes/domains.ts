@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { db, domainsTable, projectsTable, dnsRecordsTable } from "@workspace/db";
 import { eq, desc, ilike } from "drizzle-orm";
+import { logActivity } from "../lib/activity";
 import {
   RegisterDomainBody,
   GetDomainParams,
@@ -133,6 +134,9 @@ router.delete("/domains/:id", async (req, res) => {
 router.post("/domains/:id/attach", async (req, res) => {
   const { id } = AttachDomainToProjectParams.parse({ id: Number(req.params.id) });
   const body = AttachDomainToProjectBody.parse(req.body);
+
+  const [prevDomain] = await db.select().from(domainsTable).where(eq(domainsTable.id, id));
+
   const [domain] = await db
     .update(domainsTable)
     .set({ projectId: body.projectId })
@@ -140,18 +144,42 @@ router.post("/domains/:id/attach", async (req, res) => {
     .returning();
   if (!domain) { res.status(404).json({ error: "Domain not found" }); return; }
   const [project] = await db.select().from(projectsTable).where(eq(projectsTable.id, body.projectId));
+
+  if (prevDomain?.projectId !== body.projectId) {
+    logActivity({
+      projectId: body.projectId,
+      type: "domain_attached",
+      title: `Domain attached: ${domain.fullDomain}`,
+      detail: domain.sslEnabled ? "SSL enabled" : undefined,
+      metadata: { domainId: domain.id, fullDomain: domain.fullDomain },
+    });
+  }
+
   res.json({ ...domain, projectName: project?.name ?? null });
 });
 
 // Detach domain from project
 router.post("/domains/:id/detach", async (req, res) => {
   const { id } = AttachDomainToProjectParams.parse({ id: Number(req.params.id) });
+
+  const [prevDomain] = await db.select().from(domainsTable).where(eq(domainsTable.id, id));
+
   const [domain] = await db
     .update(domainsTable)
     .set({ projectId: null })
     .where(eq(domainsTable.id, id))
     .returning();
   if (!domain) { res.status(404).json({ error: "Domain not found" }); return; }
+
+  if (prevDomain?.projectId) {
+    logActivity({
+      projectId: prevDomain.projectId,
+      type: "domain_detached",
+      title: `Domain detached: ${domain.fullDomain}`,
+      metadata: { domainId: domain.id, fullDomain: domain.fullDomain },
+    });
+  }
+
   res.json({ ...domain, projectName: null });
 });
 

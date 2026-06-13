@@ -5,8 +5,10 @@ import {
   useListEnvVars, useCreateDeployment, useCreateEnvVar, useDeleteEnvVar,
   useUpdateProject, useGetProjectWebhook, useTriggerGithubWebhook,
   useAttachDomainToProject, useDetachDomainFromProject, useRollbackDeployment,
+  useGetProjectActivity,
   getListDeploymentsQueryKey, getListEnvVarsQueryKey, getListDomainsQueryKey,
-  getGetProjectQueryKey, getGetProjectSummaryQueryKey, getGetProjectWebhookQueryKey
+  getGetProjectQueryKey, getGetProjectSummaryQueryKey, getGetProjectWebhookQueryKey,
+  getGetProjectActivityQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,7 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
-import { Zap, Globe, KeyRound, Activity, Settings, GitBranch, ExternalLink, Plus, Trash2, Eye, EyeOff, BarChart, Copy, Check, Webhook, GitCommit, RefreshCw, ChevronDown, Shield, Unlink, RotateCcw } from "lucide-react";
+import { Zap, Globe, KeyRound, Activity, Settings, GitBranch, ExternalLink, Plus, Trash2, Eye, EyeOff, BarChart, Copy, Check, Webhook, GitCommit, RefreshCw, ChevronDown, Shield, Unlink, RotateCcw, Clock, Rocket, Globe2, Key, GitPullRequest } from "lucide-react";
 import { SimulatedVisitButton } from "@/components/simulated-visit";
 
 function statusDot(status: string) {
@@ -167,6 +169,10 @@ export default function ProjectDetailPage() {
     query: { enabled: false, queryKey: getGetProjectWebhookQueryKey(projectId) },
   });
 
+  const { data: activityEvents, isLoading: activityLoading } = useGetProjectActivity(projectId, {
+    query: { enabled: !!projectId, queryKey: getGetProjectActivityQueryKey(projectId), refetchInterval: 5000 },
+  });
+
   const [newKey, setNewKey] = useState("");
   const [newValue, setNewValue] = useState("");
   const [newScope, setNewScope] = useState<"all" | "build" | "runtime">("all");
@@ -312,6 +318,7 @@ export default function ProjectDetailPage() {
           <TabsTrigger value="deployments" className="gap-1.5"><Activity className="w-3.5 h-3.5" />Deployments</TabsTrigger>
           <TabsTrigger value="env" className="gap-1.5"><KeyRound className="w-3.5 h-3.5" />Env Vars</TabsTrigger>
           <TabsTrigger value="domains" className="gap-1.5"><Globe className="w-3.5 h-3.5" />Domains</TabsTrigger>
+          <TabsTrigger value="activity" className="gap-1.5"><Clock className="w-3.5 h-3.5" />Activity</TabsTrigger>
           <TabsTrigger value="settings" className="gap-1.5"><Settings className="w-3.5 h-3.5" />Settings</TabsTrigger>
         </TabsList>
 
@@ -535,6 +542,90 @@ export default function ProjectDetailPage() {
               </>
             );
           })()}
+        </TabsContent>
+
+        {/* Activity tab */}
+        <TabsContent value="activity" className="mt-4">
+          {activityLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}
+            </div>
+          ) : !activityEvents || activityEvents.length === 0 ? (
+            <div className="bg-card border border-border rounded-lg p-12 text-center space-y-3">
+              <Clock className="w-8 h-8 text-muted-foreground mx-auto" />
+              <p className="text-sm font-medium">No activity yet</p>
+              <p className="text-xs text-muted-foreground">Deploys, domain changes, and env var updates will appear here.</p>
+            </div>
+          ) : (
+            <div className="relative">
+              <div className="absolute left-[19px] top-0 bottom-0 w-px bg-border" />
+              <div className="space-y-0">
+                {activityEvents.map((event) => {
+                  const icon = (() => {
+                    switch (event.type) {
+                      case "deployment_triggered": return <Rocket className="w-3.5 h-3.5" />;
+                      case "deployment_ready": return <Zap className="w-3.5 h-3.5" />;
+                      case "deployment_failed": return <Activity className="w-3.5 h-3.5" />;
+                      case "webhook_received": return <Webhook className="w-3.5 h-3.5" />;
+                      case "domain_attached": return <Globe2 className="w-3.5 h-3.5" />;
+                      case "domain_detached": return <Unlink className="w-3.5 h-3.5" />;
+                      case "env_var_added": return <Key className="w-3.5 h-3.5" />;
+                      case "env_var_deleted": return <Trash2 className="w-3.5 h-3.5" />;
+                      default: return <Clock className="w-3.5 h-3.5" />;
+                    }
+                  })();
+
+                  const iconColor = (() => {
+                    switch (event.type) {
+                      case "deployment_ready": return "bg-green-500/15 text-green-400 border-green-500/30";
+                      case "deployment_failed": return "bg-red-500/15 text-red-400 border-red-500/30";
+                      case "deployment_triggered": return "bg-blue-500/15 text-blue-400 border-blue-500/30";
+                      case "webhook_received": return "bg-purple-500/15 text-purple-400 border-purple-500/30";
+                      case "domain_attached": return "bg-cyan-500/15 text-cyan-400 border-cyan-500/30";
+                      case "domain_detached": return "bg-orange-500/15 text-orange-400 border-orange-500/30";
+                      case "env_var_added": return "bg-yellow-500/15 text-yellow-400 border-yellow-500/30";
+                      case "env_var_deleted": return "bg-muted text-muted-foreground border-border";
+                      default: return "bg-muted text-muted-foreground border-border";
+                    }
+                  })();
+
+                  const meta = event.metadata as Record<string, unknown> | null;
+                  const deploymentId = meta?.deploymentId as number | undefined;
+
+                  return (
+                    <div key={event.id} className="flex gap-4 pl-1 pb-5 last:pb-0">
+                      <div className={`relative z-10 w-9 h-9 rounded-full border flex items-center justify-center flex-shrink-0 ${iconColor}`}>
+                        {icon}
+                      </div>
+                      <div className="flex-1 min-w-0 pt-1.5">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium leading-tight">{event.title}</p>
+                            {event.detail && (
+                              <p className="text-xs text-muted-foreground mt-0.5 truncate">{event.detail}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {deploymentId && (
+                              <button
+                                className="text-xs text-primary hover:underline"
+                                onClick={() => setLocation(`/deployments/${deploymentId}`)}
+                              >
+                                #{deploymentId}
+                              </button>
+                            )}
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">
+                              {formatDistanceToNow(new Date(event.createdAt), { addSuffix: true })}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </TabsContent>
 
         {/* Settings tab */}

@@ -186,6 +186,27 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProjectSummary"
 
+  /projects/{id}/activity:
+    get:
+      operationId: getProjectActivity
+      tags: [projects]
+      summary: Get chronological activity feed for a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Activity feed
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityEvent"
+
   # ── Deployments ───────────────────────────────────────────────────────────
 
   /projects/{id}/deployments:
@@ -1289,6 +1310,38 @@ components:
         uptime:
           type: string
       required: [id, region, status, cpuPercent, memoryPercent, containers, uptime]
+
+    # ── Activity Feed ────────────────────────────────────────────────────────
+
+    ActivityEvent:
+      type: object
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        type:
+          type: string
+          enum:
+            - deployment_triggered
+            - deployment_ready
+            - deployment_failed
+            - webhook_received
+            - domain_attached
+            - domain_detached
+            - env_var_added
+            - env_var_deleted
+        title:
+          type: string
+        detail:
+          type: ["string", "null"]
+        metadata:
+          type: object
+          nullable: true
+          additionalProperties: true
+        createdAt:
+          type: string
+      required: [id, projectId, type, title, createdAt]
 
     # ── Webhooks ────────────────────────────────────────────────────────────
 

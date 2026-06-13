@@ -249,6 +249,25 @@ export const GetProjectSummaryResponse = zod.object({
 
 
 /**
+ * @summary Get chronological activity feed for a project
+ */
+export const GetProjectActivityParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetProjectActivityResponseItem = zod.object({
+  "id": zod.number(),
+  "projectId": zod.number(),
+  "type": zod.enum(['deployment_triggered', 'deployment_ready', 'deployment_failed', 'webhook_received', 'domain_attached', 'domain_detached', 'env_var_added', 'env_var_deleted']),
+  "title": zod.string(),
+  "detail": zod.string().nullish(),
+  "metadata": zod.record(zod.string(), zod.unknown()).nullish(),
+  "createdAt": zod.string()
+})
+export const GetProjectActivityResponse = zod.array(GetProjectActivityResponseItem)
+
+
+/**
  * @summary List deployments for a project
  */
 export const ListDeploymentsParams = zod.object({

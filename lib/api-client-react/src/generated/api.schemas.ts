@@ -424,6 +424,33 @@ export interface InfrastructureStatus {
   memoryUsagePercent: number;
 }
 
+export type ActivityEventType = typeof ActivityEventType[keyof typeof ActivityEventType];
+
+
+export const ActivityEventType = {
+  deployment_triggered: 'deployment_triggered',
+  deployment_ready: 'deployment_ready',
+  deployment_failed: 'deployment_failed',
+  webhook_received: 'webhook_received',
+  domain_attached: 'domain_attached',
+  domain_detached: 'domain_detached',
+  env_var_added: 'env_var_added',
+  env_var_deleted: 'env_var_deleted',
+} as const;
+
+export type ActivityEventMetadata = { [key: string]: unknown } | null;
+
+export interface ActivityEvent {
+  id: number;
+  projectId: number;
+  type: ActivityEventType;
+  title: string;
+  /** @nullable */
+  detail?: string | null;
+  metadata?: ActivityEventMetadata;
+  createdAt: string;
+}
+
 export interface WebhookEvent {
   id: number;
   projectId: number;
