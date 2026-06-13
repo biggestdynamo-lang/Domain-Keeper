@@ -1,7 +1,7 @@
 import { useRoute, Link } from "wouter";
 import { useGetDeployment, getGetDeploymentQueryKey } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { GitCommit, Zap, Globe, CheckCircle2, ExternalLink, ArrowLeft } from "lucide-react";
+import { GitCommit, Zap, ExternalLink } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 export default function DeploymentPreviewPage() {
@@ -14,50 +14,6 @@ export default function DeploymentPreviewPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Preview bar */}
-      <div className="bg-card border-b border-border px-4 py-2.5 flex items-center gap-3 sticky top-0 z-50">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 text-xs font-medium text-primary">
-            <Zap className="w-3.5 h-3.5" />
-            <span>Freeable Domains</span>
-          </div>
-          <span className="text-muted-foreground/40 text-xs">·</span>
-          {isLoading ? (
-            <Skeleton className="h-3.5 w-40" />
-          ) : deployment ? (
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="flex items-center gap-1 text-[11px] bg-green-500/10 text-green-400 border border-green-500/20 px-1.5 py-0.5 rounded-full">
-                <CheckCircle2 className="w-2.5 h-2.5" />Deployed
-              </span>
-              <span className="text-xs text-muted-foreground truncate hidden sm:block">
-                {deployment.commitMessage ?? `Deployment #${deployment.id}`}
-              </span>
-              {deployment.commitSha && (
-                <span className="text-[11px] text-muted-foreground font-mono hidden md:block">
-                  {deployment.commitSha.slice(0, 7)}
-                </span>
-              )}
-            </div>
-          ) : (
-            <span className="text-xs text-muted-foreground">Deployment #{deploymentId}</span>
-          )}
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {deployment && (
-            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground border border-border rounded px-2 py-1 font-mono hidden sm:flex truncate max-w-[260px]">
-              <Globe className="w-3 h-3 flex-shrink-0" />
-              <span className="truncate">{window.location.href}</span>
-            </div>
-          )}
-          <Link href={deployment ? `/projects/${deployment.projectId}` : "/"}>
-            <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border hover:border-border/80">
-              <ArrowLeft className="w-3 h-3" />
-              <span className="hidden sm:inline">Back to project</span>
-            </button>
-          </Link>
-        </div>
-      </div>
-
       {/* Mock deployed app content */}
       <div className="flex-1 flex flex-col">
         {/* Mock nav */}
