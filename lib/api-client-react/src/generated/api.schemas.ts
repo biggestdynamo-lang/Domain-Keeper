@@ -277,7 +277,13 @@ export interface DnsRecord {
   ttl: number;
   /** @nullable */
   priority?: number | null;
+  /** @nullable */
+  cloudflareRecordId?: string | null;
   createdAt: string;
+}
+
+export interface AppConfig {
+  cloudflareEnabled: boolean;
 }
 
 export type DnsRecordInputType = typeof DnsRecordInputType[keyof typeof DnsRecordInputType];

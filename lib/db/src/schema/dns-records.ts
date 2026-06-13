@@ -10,6 +10,7 @@ export const dnsRecordsTable = pgTable("dns_records", {
   value: text("value").notNull(),
   ttl: integer("ttl").notNull().default(3600),
   priority: integer("priority"),
+  cloudflareRecordId: text("cloudflare_record_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { ArrowLeft, Shield, Globe, RefreshCw, Plus, Trash2, Server } from "lucide-react";
+import { ArrowLeft, Shield, Globe, RefreshCw, Plus, Trash2, Server, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { useGetConfig } from "@workspace/api-client-react";
 
 const DNS_TYPES = ["A", "AAAA", "CNAME", "TXT", "MX", "NS", "SRV", "CAA", "PTR", "ALIAS"] as const;
 
@@ -21,6 +22,8 @@ export default function DomainDetailPage() {
   const domainId = Number(params?.id);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  const { data: config } = useGetConfig();
 
   const { data: domain, isLoading } = useGetDomain(domainId, {
     query: { enabled: !!domainId, queryKey: getGetDomainQueryKey(domainId) },
@@ -123,6 +126,31 @@ export default function DomainDetailPage() {
           <h2 className="font-semibold text-sm">DNS Records</h2>
           <span className="text-xs text-muted-foreground ml-auto">{dnsRecords?.length ?? 0} records</span>
         </div>
+
+        {/* Cloudflare sync status notice */}
+        {config !== undefined && (
+          <div className={`px-5 py-3 flex items-start gap-2.5 text-xs border-b border-border ${
+            config.cloudflareEnabled
+              ? "bg-green-500/5 text-green-400"
+              : "bg-yellow-500/5 text-yellow-500"
+          }`}>
+            {config.cloudflareEnabled ? (
+              <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+            ) : (
+              <AlertTriangle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+            )}
+            <span>
+              {config.cloudflareEnabled
+                ? "Cloudflare DNS sync is active — changes are propagated to your Cloudflare zone."
+                : <>
+                    Cloudflare DNS sync is not configured — records are saved locally only.{" "}
+                    Set <code className="font-mono bg-yellow-500/10 px-1 rounded">CLOUDFLARE_API_TOKEN</code> and{" "}
+                    <code className="font-mono bg-yellow-500/10 px-1 rounded">CLOUDFLARE_ZONE_ID</code> to enable real DNS propagation.
+                  </>
+              }
+            </span>
+          </div>
+        )}
 
         {/* Add record form */}
         <form onSubmit={handleAddRecord} className="p-4 border-b border-border bg-muted/20">

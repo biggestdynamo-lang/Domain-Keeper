@@ -10,6 +10,7 @@ import analyticsRouter from "./analytics";
 import webhooksRouter from "./webhooks";
 import activityRouter from "./activity";
 import ipAddressesRouter from "./ip-addresses";
+import configRouter from "./config";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(analyticsRouter);
 router.use(webhooksRouter);
 router.use(activityRouter);
 router.use(ipAddressesRouter);
+router.use(configRouter);
 
 export default router;

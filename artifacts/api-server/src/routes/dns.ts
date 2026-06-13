@@ -9,6 +9,7 @@ import {
   UpdateDnsRecordBody,
   DeleteDnsRecordParams,
 } from "@workspace/api-zod";
+import { cfCreateRecord, cfUpdateRecord, cfDeleteRecord } from "../lib/cloudflare";
 
 const router = Router();
 
@@ -31,6 +32,21 @@ router.post("/domains/:id/dns", async (req, res) => {
     ttl: body.ttl ?? 3600,
     priority: body.priority ?? null,
   }).returning();
+
+  const cfId = await cfCreateRecord({
+    type: record.type,
+    name: record.name,
+    value: record.value,
+    ttl: record.ttl,
+    priority: record.priority,
+  });
+  if (cfId) {
+    await db.update(dnsRecordsTable)
+      .set({ cloudflareRecordId: cfId })
+      .where(eq(dnsRecordsTable.id, record.id));
+    record.cloudflareRecordId = cfId;
+  }
+
   res.status(201).json(record);
 });
 
@@ -40,12 +56,27 @@ router.put("/dns/:id", async (req, res) => {
   const body = UpdateDnsRecordBody.parse(req.body);
   const [record] = await db.update(dnsRecordsTable).set(body).where(eq(dnsRecordsTable.id, id)).returning();
   if (!record) { res.status(404).json({ error: "DNS record not found" }); return; }
+
+  if (record.cloudflareRecordId) {
+    await cfUpdateRecord(record.cloudflareRecordId, {
+      type: body.type,
+      name: body.name,
+      value: body.value,
+      ttl: body.ttl,
+      priority: body.priority,
+    });
+  }
+
   res.json(record);
 });
 
 // Delete DNS record
 router.delete("/dns/:id", async (req, res) => {
   const { id } = DeleteDnsRecordParams.parse({ id: Number(req.params.id) });
+  const [record] = await db.select().from(dnsRecordsTable).where(eq(dnsRecordsTable.id, id));
+  if (record?.cloudflareRecordId) {
+    await cfDeleteRecord(record.cloudflareRecordId);
+  }
   await db.delete(dnsRecordsTable).where(eq(dnsRecordsTable.id, id));
   res.status(204).send();
 });

@@ -670,6 +670,21 @@ paths:
               schema:
                 $ref: "#/components/schemas/InfrastructureStatus"
 
+  # ── Config ────────────────────────────────────────────────────────────────
+
+  /config:
+    get:
+      operationId: getConfig
+      tags: [infrastructure]
+      summary: Get integration configuration flags
+      responses:
+        "200":
+          description: Config flags
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppConfig"
+
   # ── IP Addresses ──────────────────────────────────────────────────────────
 
   /ip-addresses:
@@ -1204,9 +1219,18 @@ components:
           type: integer
         priority:
           type: ["integer", "null"]
+        cloudflareRecordId:
+          type: ["string", "null"]
         createdAt:
           type: string
       required: [id, domainId, type, name, value, ttl, createdAt]
+
+    AppConfig:
+      type: object
+      properties:
+        cloudflareEnabled:
+          type: boolean
+      required: [cloudflareEnabled]
 
     DnsRecordInput:
       type: object

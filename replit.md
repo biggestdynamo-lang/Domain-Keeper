@@ -12,6 +12,7 @@ A full-stack hosting + domain management platform combining GitHub import, auto-
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - `pnpm --filter @workspace/scripts run seed` — seed the database with sample data
 - Required env: `DATABASE_URL` — Postgres connection string, `SESSION_SECRET`
+- Optional env: `CLOUDFLARE_API_TOKEN` — Cloudflare API token with DNS edit permissions; `CLOUDFLARE_ZONE_ID` — Cloudflare zone ID for the domain. When both are set, DNS record CRUD and new-domain default records are synced to Cloudflare automatically. Without them the app runs in DB-only mode (no crash).
 
 ## Stack
 

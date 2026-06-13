@@ -521,6 +521,7 @@ export const ListDnsRecordsResponseItem = zod.object({
   "value": zod.string(),
   "ttl": zod.number(),
   "priority": zod.number().nullish(),
+  "cloudflareRecordId": zod.string().nullish(),
   "createdAt": zod.string()
 })
 export const ListDnsRecordsResponse = zod.array(ListDnsRecordsResponseItem)
@@ -569,6 +570,7 @@ export const UpdateDnsRecordResponse = zod.object({
   "value": zod.string(),
   "ttl": zod.number(),
   "priority": zod.number().nullish(),
+  "cloudflareRecordId": zod.string().nullish(),
   "createdAt": zod.string()
 })
 
@@ -712,6 +714,14 @@ export const GetInfrastructureStatusResponse = zod.object({
   "bandwidthUsedGb": zod.number(),
   "cpuUsagePercent": zod.number().nullable(),
   "memoryUsagePercent": zod.number().nullable()
+})
+
+
+/**
+ * @summary Get integration configuration flags
+ */
+export const GetConfigResponse = zod.object({
+  "cloudflareEnabled": zod.boolean()
 })
 
 

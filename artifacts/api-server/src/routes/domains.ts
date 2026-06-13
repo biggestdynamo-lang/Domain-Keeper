@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, domainsTable, projectsTable, dnsRecordsTable } from "@workspace/db";
 import { eq, desc, ilike } from "drizzle-orm";
 import { logActivity } from "../lib/activity";
+import { cfCreateRecord } from "../lib/cloudflare";
 import {
   RegisterDomainBody,
   GetDomainParams,
@@ -85,13 +86,24 @@ router.post("/domains", async (req, res) => {
     status: "active",
   }).returning();
 
-  // Create default DNS records
-  await db.insert(dnsRecordsTable).values([
-    { domainId: domain.id, type: "A", name: "@", value: "76.76.21.21", ttl: 3600 },
-    { domainId: domain.id, type: "CNAME", name: "www", value: fullDomain, ttl: 3600 },
-    { domainId: domain.id, type: "NS", name: "@", value: "ns1.freeable.local", ttl: 86400 },
-    { domainId: domain.id, type: "NS", name: "@", value: "ns2.freeable.local", ttl: 86400 },
-  ]);
+  // Default DNS records
+  const defaultRecords = [
+    { domainId: domain.id, type: "A",     name: "@",   value: "76.76.21.21",       ttl: 3600,  priority: null as null },
+    { domainId: domain.id, type: "CNAME", name: "www", value: fullDomain,           ttl: 3600,  priority: null as null },
+    { domainId: domain.id, type: "NS",    name: "@",   value: "ns1.freeable.local", ttl: 86400, priority: null as null },
+    { domainId: domain.id, type: "NS",    name: "@",   value: "ns2.freeable.local", ttl: 86400, priority: null as null },
+  ];
+
+  const inserted = await db.insert(dnsRecordsTable).values(defaultRecords).returning();
+
+  // Sync default records to Cloudflare (fire-and-forget; failures logged, not thrown)
+  for (const rec of inserted) {
+    void cfCreateRecord({ type: rec.type, name: rec.name, value: rec.value, ttl: rec.ttl, priority: rec.priority }).then(async cfId => {
+      if (cfId) {
+        await db.update(dnsRecordsTable).set({ cloudflareRecordId: cfId }).where(eq(dnsRecordsTable.id, rec.id));
+      }
+    });
+  }
 
   res.status(201).json({ ...domain, projectName: null });
 });
