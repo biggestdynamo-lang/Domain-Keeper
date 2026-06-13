@@ -13,6 +13,11 @@ import {
 
 const router = Router();
 
+// True when running inside a serverless function (Netlify, AWS Lambda, etc.)
+// In serverless mode the process is frozen after the response is sent, so the
+// simulation must complete before we respond — no fire-and-forget.
+const IS_SERVERLESS = !!(process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME);
+
 // List deployments for a project
 router.get("/projects/:id/deployments", async (req, res) => {
   const { id } = ListDeploymentsParams.parse({ id: Number(req.params.id) });
@@ -63,8 +68,12 @@ router.post("/projects/:id/deployments", async (req, res) => {
     metadata: { deploymentId: deployment.id, triggeredBy: "manual" },
   });
 
-  // Simulate async build pipeline
-  simulateBuild(deployment.id, id);
+  // In serverless, await simulation before responding so it completes
+  if (IS_SERVERLESS) {
+    await simulateBuild(deployment.id, id);
+  } else {
+    simulateBuild(deployment.id, id);
+  }
 
   res.status(201).json({ ...deployment, projectName: project.name });
 });
@@ -120,7 +129,11 @@ router.post("/deployments/:id/rollback", async (req, res) => {
     metadata: { deploymentId: newDep.id, rolledBackFrom: id, triggeredBy: "rollback" },
   });
 
-  simulateBuild(newDep.id, orig.projectId);
+  if (IS_SERVERLESS) {
+    await simulateBuild(newDep.id, orig.projectId);
+  } else {
+    simulateBuild(newDep.id, orig.projectId);
+  }
 
   res.json({ ...newDep, projectName: null });
 });
@@ -220,7 +233,7 @@ router.get("/deployments/:id/logs/stream", async (req, res) => {
   req.on("close", () => clearInterval(interval));
 });
 
-// Simulate build pipeline asynchronously
+// Simulate build pipeline
 async function simulateBuild(deploymentId: number, projectId: number) {
   const stages: Array<{ stage: string; messages: string[] }> = [
     { stage: "clone", messages: ["Cloning repository...", "Repository cloned successfully"] },
@@ -235,7 +248,7 @@ async function simulateBuild(deploymentId: number, projectId: number) {
   ];
 
   for (let i = 0; i < stages.length; i++) {
-    await sleep(500 + Math.random() * 1000);
+    if (!IS_SERVERLESS) await sleep(500 + Math.random() * 1000);
     await db.update(deploymentsTable).set({ status: statuses[i] }).where(eq(deploymentsTable.id, deploymentId));
     for (const msg of stages[i].messages) {
       await db.insert(logEntriesTable).values({
@@ -248,12 +261,11 @@ async function simulateBuild(deploymentId: number, projectId: number) {
   }
 
   const duration = 15 + Math.random() * 30;
-  // Use the app's own real domain so deployment URLs resolve in DNS
-  // (same wildcard-DNS pattern real platforms use: *.vercel.app → their load balancer)
   const appDomain = (process.env.APP_DOMAIN ?? process.env.REPLIT_DOMAINS?.split(",")[0] ?? process.env.REPLIT_DEV_DOMAIN ?? "freeabledomain.netlify.app").trim();
   const url = appDomain
     ? `https://${appDomain}/preview/deployment/${deploymentId}`
     : `/preview/deployment/${deploymentId}`;
+
   await db.update(deploymentsTable).set({
     status: "ready",
     url,
