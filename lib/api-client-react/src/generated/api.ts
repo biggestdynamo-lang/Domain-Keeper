@@ -1570,6 +1570,76 @@ export const useAttachDomainToProject = <TError = ErrorType<unknown>,
       return useMutation(getAttachDomainToProjectMutationOptions(options));
     }
 
+export const getDetachDomainFromProjectUrl = (id: number,) => {
+
+
+
+
+  return `/api/domains/${id}/detach`
+}
+
+/**
+ * @summary Detach domain from its current project
+ */
+export const detachDomainFromProject = async (id: number, options?: RequestInit): Promise<Domain> => {
+
+  return customFetch<Domain>(getDetachDomainFromProjectUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getDetachDomainFromProjectMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof detachDomainFromProject>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof detachDomainFromProject>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['detachDomainFromProject'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof detachDomainFromProject>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  detachDomainFromProject(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DetachDomainFromProjectMutationResult = NonNullable<Awaited<ReturnType<typeof detachDomainFromProject>>>
+
+    export type DetachDomainFromProjectMutationError = ErrorType<void>
+
+    /**
+ * @summary Detach domain from its current project
+ */
+export const useDetachDomainFromProject = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof detachDomainFromProject>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof detachDomainFromProject>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDetachDomainFromProjectMutationOptions(options));
+    }
+
 export const getListDnsRecordsUrl = (id: number,) => {
 
 

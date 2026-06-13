@@ -465,6 +465,29 @@ export const AttachDomainToProjectResponse = zod.object({
 
 
 /**
+ * @summary Detach domain from its current project
+ */
+export const DetachDomainFromProjectParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DetachDomainFromProjectResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "tld": zod.string(),
+  "fullDomain": zod.string(),
+  "status": zod.enum(['active', 'pending', 'expired', 'suspended', 'transferring']),
+  "projectId": zod.number().nullish(),
+  "projectName": zod.string().nullish(),
+  "registeredAt": zod.string(),
+  "expiresAt": zod.string(),
+  "autoRenew": zod.boolean(),
+  "sslEnabled": zod.boolean(),
+  "sessionId": zod.string().nullish()
+})
+
+
+/**
  * @summary List DNS records for a domain
  */
 export const ListDnsRecordsParams = zod.object({

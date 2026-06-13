@@ -403,6 +403,27 @@ paths:
               schema:
                 $ref: "#/components/schemas/Domain"
 
+  /domains/{id}/detach:
+    post:
+      operationId: detachDomainFromProject
+      tags: [domains]
+      summary: Detach domain from its current project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Detached
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Domain"
+        "404":
+          description: Not found
+
   # ── DNS Records ───────────────────────────────────────────────────────────
 
   /domains/{id}/dns:

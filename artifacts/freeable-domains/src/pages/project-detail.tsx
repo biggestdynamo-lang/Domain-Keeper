@@ -4,7 +4,8 @@ import {
   useGetProject, useGetProjectSummary, useListDeployments, useListDomains,
   useListEnvVars, useCreateDeployment, useCreateEnvVar, useDeleteEnvVar,
   useUpdateProject, useGetProjectWebhook, useTriggerGithubWebhook,
-  getListDeploymentsQueryKey, getListEnvVarsQueryKey,
+  useAttachDomainToProject, useDetachDomainFromProject,
+  getListDeploymentsQueryKey, getListEnvVarsQueryKey, getListDomainsQueryKey,
   getGetProjectQueryKey, getGetProjectSummaryQueryKey, getGetProjectWebhookQueryKey
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -18,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
-import { Zap, Globe, KeyRound, Activity, Settings, GitBranch, ExternalLink, Plus, Trash2, Eye, EyeOff, BarChart, Copy, Check, Webhook, GitCommit, RefreshCw } from "lucide-react";
+import { Zap, Globe, KeyRound, Activity, Settings, GitBranch, ExternalLink, Plus, Trash2, Eye, EyeOff, BarChart, Copy, Check, Webhook, GitCommit, RefreshCw, ChevronDown, Shield, Unlink } from "lucide-react";
 
 function statusDot(status: string) {
   switch (status) {
@@ -36,6 +37,98 @@ function statusColor(status: string) {
     case "failed": return "text-red-400";
     default: return "text-muted-foreground";
   }
+}
+
+interface DomainCardProps {
+  domain: { id: number; fullDomain: string; status: string; sslEnabled: boolean; tld: string; name: string };
+  deployTarget: string;
+  onDetach: () => void;
+  detaching: boolean;
+}
+
+function DomainCard({ domain, deployTarget, onDetach, detaching }: DomainCardProps) {
+  const [showDns, setShowDns] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const copyTarget = () => {
+    navigator.clipboard.writeText(deployTarget);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="bg-card border border-border rounded-lg overflow-hidden">
+      <div className="flex items-center gap-3 p-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-medium text-sm">{domain.fullDomain}</span>
+            <Badge variant="outline" className="text-green-400 border-green-400/30 bg-green-400/10 text-[10px] h-4 px-1.5">
+              {domain.status}
+            </Badge>
+            {domain.sslEnabled && (
+              <Badge variant="outline" className="text-blue-400 border-blue-400/30 bg-blue-400/10 text-[10px] h-4 px-1.5 gap-0.5">
+                <Shield className="w-2.5 h-2.5" />SSL
+              </Badge>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5 truncate">→ {deployTarget}</p>
+        </div>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs gap-1"
+            onClick={() => setShowDns(v => !v)}
+          >
+            DNS <ChevronDown className={`w-3 h-3 transition-transform ${showDns ? "rotate-180" : ""}`} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-destructive"
+            onClick={onDetach}
+            disabled={detaching}
+            data-testid={`button-detach-domain-${domain.id}`}
+          >
+            <Unlink className="w-3 h-3" />Detach
+          </Button>
+        </div>
+      </div>
+
+      {showDns && (
+        <div className="border-t border-border bg-muted/20 p-4 space-y-3">
+          <p className="text-xs font-medium">DNS Configuration</p>
+          <p className="text-xs text-muted-foreground">
+            Add a CNAME record in your DNS provider pointing{" "}
+            <code className="text-primary bg-primary/10 px-1 rounded text-[11px]">{domain.fullDomain}</code>{" "}
+            to your deployment:
+          </p>
+          <div className="rounded-md bg-background border border-border overflow-hidden text-[11px] font-mono">
+            <div className="grid grid-cols-4 gap-2 px-3 py-1.5 bg-muted/50 text-muted-foreground font-sans text-[10px] uppercase tracking-wide">
+              <span>Type</span><span>Name</span><span className="col-span-2">Value</span>
+            </div>
+            <div className="grid grid-cols-4 gap-2 px-3 py-2 items-center">
+              <span className="text-yellow-400">CNAME</span>
+              <span className="text-blue-400">@</span>
+              <span className="col-span-2 text-green-400 truncate">{deployTarget}</span>
+            </div>
+            <div className="grid grid-cols-4 gap-2 px-3 py-2 items-center border-t border-border">
+              <span className="text-yellow-400">CNAME</span>
+              <span className="text-blue-400">www</span>
+              <span className="col-span-2 text-green-400 truncate">{deployTarget}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 pt-1">
+            <code className="flex-1 text-[11px] bg-background border border-border rounded px-2 py-1.5 text-muted-foreground truncate">{deployTarget}</code>
+            <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-xs flex-shrink-0" onClick={copyTarget}>
+              {copied ? <><Check className="w-3 h-3" />Copied!</> : <><Copy className="w-3 h-3" />Copy</>}
+            </Button>
+          </div>
+          <p className="text-[11px] text-muted-foreground">DNS propagation usually takes 1–24 hours. SSL is provisioned automatically.</p>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function ProjectDetailPage() {
@@ -62,6 +155,12 @@ export default function ProjectDetailPage() {
   const createEnvVar = useCreateEnvVar();
   const deleteEnvVar = useDeleteEnvVar();
   const triggerWebhook = useTriggerGithubWebhook();
+  const attachDomain = useAttachDomainToProject();
+  const detachDomain = useDetachDomainFromProject();
+
+  const { data: allDomains = [] } = useListDomains({
+    query: { enabled: !!projectId, queryKey: getListDomainsQueryKey() },
+  });
 
   const { data: webhookInfo, refetch: refetchWebhook } = useGetProjectWebhook(projectId, {
     query: { enabled: false, queryKey: getGetProjectWebhookQueryKey(projectId) },
@@ -73,6 +172,7 @@ export default function ProjectDetailPage() {
   const [newEncrypted, setNewEncrypted] = useState(false);
   const [revealedVars, setRevealedVars] = useState<Set<number>>(new Set());
   const [copiedUrl, setCopiedUrl] = useState(false);
+  const [selectedDomainId, setSelectedDomainId] = useState<string>("");
 
   if (projectLoading) {
     return (
@@ -303,14 +403,102 @@ export default function ProjectDetailPage() {
         </TabsContent>
 
         {/* Domains tab */}
-        <TabsContent value="domains" className="mt-4">
-          <div className="bg-card border border-border rounded-lg p-6 text-center space-y-3">
-            <Globe className="w-8 h-8 text-muted-foreground mx-auto" />
-            <p className="text-sm text-muted-foreground">Attach a domain to this project</p>
-            <Link href="/domains/search">
-              <Button size="sm" data-testid="button-register-domain-for-project">Register a domain</Button>
-            </Link>
-          </div>
+        <TabsContent value="domains" className="mt-4 space-y-4">
+          {/* Attached domains */}
+          {(() => {
+            const attached = allDomains.filter(d => d.projectId === projectId);
+            const unattached = allDomains.filter(d => !d.projectId);
+            const deployTarget = project.deploymentUrl ?? `deployment-latest.freeable.live`;
+
+            return (
+              <>
+                {attached.length === 0 ? (
+                  <div className="bg-card border border-border rounded-lg p-8 text-center space-y-2">
+                    <Globe className="w-8 h-8 text-muted-foreground mx-auto" />
+                    <p className="text-sm font-medium">No domains attached</p>
+                    <p className="text-xs text-muted-foreground">Attach a registered domain to serve traffic for this project.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {attached.map(domain => (
+                      <DomainCard
+                        key={domain.id}
+                        domain={domain}
+                        deployTarget={deployTarget}
+                        onDetach={() => {
+                          detachDomain.mutate({ id: domain.id }, {
+                            onSuccess: () => {
+                              queryClient.invalidateQueries({ queryKey: getListDomainsQueryKey() });
+                              toast({ title: "Domain detached" });
+                            },
+                          });
+                        }}
+                        detaching={detachDomain.isPending}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* Attach existing domain */}
+                <div className="bg-card border border-border rounded-lg p-5 space-y-4">
+                  <h3 className="text-sm font-medium">Attach a registered domain</h3>
+                  {unattached.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                      All your domains are already attached to projects, or you haven't registered any yet.{" "}
+                      <Link href="/domains/search" className="text-primary hover:underline">Register one free</Link>.
+                    </p>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <Select value={selectedDomainId} onValueChange={setSelectedDomainId}>
+                        <SelectTrigger className="flex-1 h-8 text-xs" data-testid="select-domain-to-attach">
+                          <SelectValue placeholder="Pick a domain…" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {unattached.map(d => (
+                            <SelectItem key={d.id} value={String(d.id)}>
+                              {d.fullDomain}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        size="sm"
+                        className="gap-1.5 flex-shrink-0"
+                        disabled={!selectedDomainId || attachDomain.isPending}
+                        onClick={() => {
+                          if (!selectedDomainId) return;
+                          attachDomain.mutate(
+                            { id: Number(selectedDomainId), data: { projectId } },
+                            {
+                              onSuccess: () => {
+                                queryClient.invalidateQueries({ queryKey: getListDomainsQueryKey() });
+                                setSelectedDomainId("");
+                                toast({ title: "Domain attached", description: "DNS config is ready below." });
+                              },
+                            }
+                          );
+                        }}
+                        data-testid="button-attach-domain"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        {attachDomain.isPending ? "Attaching…" : "Attach"}
+                      </Button>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 pt-1">
+                    <div className="h-px flex-1 bg-border" />
+                    <span className="text-xs text-muted-foreground">or</span>
+                    <div className="h-px flex-1 bg-border" />
+                  </div>
+                  <Link href="/domains/search">
+                    <Button variant="outline" size="sm" className="gap-1.5 w-full" data-testid="button-register-new-domain">
+                      <Plus className="w-3.5 h-3.5" />Register a new free domain
+                    </Button>
+                  </Link>
+                </div>
+              </>
+            );
+          })()}
         </TabsContent>
 
         {/* Settings tab */}

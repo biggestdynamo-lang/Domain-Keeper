@@ -143,4 +143,16 @@ router.post("/domains/:id/attach", async (req, res) => {
   res.json({ ...domain, projectName: project?.name ?? null });
 });
 
+// Detach domain from project
+router.post("/domains/:id/detach", async (req, res) => {
+  const { id } = AttachDomainToProjectParams.parse({ id: Number(req.params.id) });
+  const [domain] = await db
+    .update(domainsTable)
+    .set({ projectId: null })
+    .where(eq(domainsTable.id, id))
+    .returning();
+  if (!domain) { res.status(404).json({ error: "Domain not found" }); return; }
+  res.json({ ...domain, projectName: null });
+});
+
 export default router;
