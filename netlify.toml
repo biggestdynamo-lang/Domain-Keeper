@@ -3,6 +3,9 @@
   publish = "artifacts/freeable-domains/dist/public"
   functions = "netlify/dist/functions"
 
+[functions]
+  node_bundler = "none"
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api"
