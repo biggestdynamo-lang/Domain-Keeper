@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useListProjects, useListDeployments, getListDeploymentsQueryKey } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +33,7 @@ function ProjectDeployments({ projectId, projectName }: { projectId: number; pro
   const { data: deployments, isLoading } = useListDeployments(projectId, {
     query: { enabled: true, queryKey: getListDeploymentsQueryKey(projectId) },
   });
+  const [, setLocation] = useLocation();
 
   if (isLoading) return (
     <div className="space-y-2">
@@ -52,29 +53,32 @@ function ProjectDeployments({ projectId, projectName }: { projectId: number; pro
       </div>
       <div className="space-y-2">
         {deployments.slice(0, 5).map(d => (
-          <Link key={d.id} href={`/deployments/${d.id}`}>
-            <div className="bg-card border border-border rounded-lg px-5 py-4 flex items-center gap-4 hover:border-border/60 transition-colors cursor-pointer" data-testid={`row-deployment-${d.id}`}>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${statusBadge(d.status)}`}>{d.status}</span>
-                  {d.commitMessage && <span className="text-sm truncate max-w-sm">{d.commitMessage}</span>}
-                  {d.isProduction && <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded border border-primary/20">prod</span>}
-                </div>
-                <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground flex-wrap">
-                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{formatDistanceToNow(new Date(d.createdAt), { addSuffix: true })}</span>
-                  {d.commitSha && <span className="flex items-center gap-1"><GitCommit className="w-3 h-3" />{d.commitSha.slice(0, 7)}</span>}
-                  <span>{d.branch}</span>
-                  <span>{d.triggeredBy}</span>
-                  {d.buildDurationSeconds && <span>{d.buildDurationSeconds.toFixed(0)}s</span>}
-                </div>
+          <div
+            key={d.id}
+            className="bg-card border border-border rounded-lg px-5 py-4 flex items-center gap-4 hover:border-border/60 transition-colors cursor-pointer"
+            onClick={() => setLocation(`/deployments/${d.id}`)}
+            data-testid={`row-deployment-${d.id}`}
+          >
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${statusBadge(d.status)}`}>{d.status}</span>
+                {d.commitMessage && <span className="text-sm truncate max-w-sm">{d.commitMessage}</span>}
+                {d.isProduction && <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded border border-primary/20">prod</span>}
               </div>
-              {d.url && (
-                <a href={d.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
-                  <ExternalLink className="w-3 h-3" />Visit
-                </a>
-              )}
+              <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground flex-wrap">
+                <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{formatDistanceToNow(new Date(d.createdAt), { addSuffix: true })}</span>
+                {d.commitSha && <span className="flex items-center gap-1"><GitCommit className="w-3 h-3" />{d.commitSha.slice(0, 7)}</span>}
+                <span>{d.branch}</span>
+                <span>{d.triggeredBy}</span>
+                {d.buildDurationSeconds && <span>{d.buildDurationSeconds.toFixed(0)}s</span>}
+              </div>
             </div>
-          </Link>
+            {d.url && (
+              <a href={d.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
+                <ExternalLink className="w-3 h-3" />Visit
+              </a>
+            )}
+          </div>
         ))}
       </div>
     </div>

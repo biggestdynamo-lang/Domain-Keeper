@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRoute, Link, useLocation } from "wouter";
 import {
   useGetProject, useGetProjectSummary, useListDeployments, useListDomains,
@@ -196,29 +196,32 @@ export default function ProjectDetailPage() {
             </div>
           ) : (
             deployments?.map(d => (
-              <Link key={d.id} href={`/deployments/${d.id}`}>
-                <div className="bg-card border border-border rounded-lg px-5 py-4 flex items-center justify-between hover:border-border/60 transition-colors cursor-pointer" data-testid={`row-deploy-${d.id}`}>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${
-                        d.status === "ready" ? "bg-green-500/10 text-green-400 border-green-500/20" :
-                        d.status === "failed" ? "bg-red-500/10 text-red-400 border-red-500/20" :
-                        "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
-                      }`}>{d.status}</span>
-                      {d.commitMessage && <span className="text-sm truncate max-w-xs">{d.commitMessage}</span>}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {formatDistanceToNow(new Date(d.createdAt), { addSuffix: true })} · {d.branch} · {d.triggeredBy}
-                      {d.buildDurationSeconds && ` · ${d.buildDurationSeconds.toFixed(0)}s`}
-                    </p>
+              <div
+                key={d.id}
+                className="bg-card border border-border rounded-lg px-5 py-4 flex items-center justify-between hover:border-border/60 transition-colors cursor-pointer"
+                onClick={() => setLocation(`/deployments/${d.id}`)}
+                data-testid={`row-deploy-${d.id}`}
+              >
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${
+                      d.status === "ready" ? "bg-green-500/10 text-green-400 border-green-500/20" :
+                      d.status === "failed" ? "bg-red-500/10 text-red-400 border-red-500/20" :
+                      "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
+                    }`}>{d.status}</span>
+                    {d.commitMessage && <span className="text-sm truncate max-w-xs">{d.commitMessage}</span>}
                   </div>
-                  {d.url && (
-                    <a href={d.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1 flex-shrink-0 ml-3" onClick={e => e.stopPropagation()}>
-                      <ExternalLink className="w-3 h-3" />Visit
-                    </a>
-                  )}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formatDistanceToNow(new Date(d.createdAt), { addSuffix: true })} · {d.branch} · {d.triggeredBy}
+                    {d.buildDurationSeconds && ` · ${d.buildDurationSeconds.toFixed(0)}s`}
+                  </p>
                 </div>
-              </Link>
+                {d.url && (
+                  <a href={d.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1 flex-shrink-0 ml-3" onClick={e => e.stopPropagation()}>
+                    <ExternalLink className="w-3 h-3" />Visit
+                  </a>
+                )}
+              </div>
             ))
           )}
         </TabsContent>
