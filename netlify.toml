@@ -1,5 +1,5 @@
 [build]
-  command = "npm install -g pnpm --force && pnpm install && pnpm run typecheck:libs && pnpm --filter @workspace/api-server run build:netlify"
+  command = "npm install -g pnpm@10 --force && pnpm install && pnpm run typecheck:libs && pnpm --filter @workspace/api-server run build:netlify"
   publish = "artifacts/freeable-domains/dist/public"
   functions = "netlify/dist/functions"
 
